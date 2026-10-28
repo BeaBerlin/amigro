@@ -1,0 +1,383 @@
+{
+  "schemaVersion": 1,
+  "ui": {
+    "brand": "Amigro",
+    "pageTitle": "Amigro — Your first steps in Berlin",
+    "description": "A simple guide to your first bureaucratic steps in Berlin. Keep your progress and prepare your documents, one step at a time.",
+    "locale": "en-GB",
+    "location": "Berlin, Germany",
+    "skip": "Skip to your guide",
+    "navigationLabel": "Main navigation",
+    "navigation": {
+      "journey": "My journey",
+      "packing": "Packing list",
+      "plan": "My plan"
+    },
+    "hero": {
+      "eyebrow": "A NEW CITY. A LITTLE GUIDANCE.",
+      "title": "Make yourself at home in Berlin.",
+      "description": "Less paperwork overwhelm. More feeling at home. Take your first steps with a little help from Amigro."
+    },
+    "journey": {
+      "title": "Your first steps",
+      "count": "{total} steps",
+      "intro": "A guide, not a queue. Open any step when you need it.",
+      "stepLabel": "Step {number}",
+      "openStep": "Open {title}",
+      "nextBadge": "NEXT STEP",
+      "completeBadge": "DONE",
+      "nonEuBadge": "NON-EU",
+      "earlyTitle": "A small heads-up",
+      "earlyNote": "Check health insurance and any residence requirements right away. They may need attention before your address registration.",
+      "planTitle": "Make it your timeline",
+      "planNote": "Add your move-in date to see an address registration planning reminder.",
+      "planLink": "Add my move-in date",
+      "completeTitle": "You have made a good start.",
+      "completeNote": "You have checked off every step. You can revisit any of them below.",
+      "startBadge": "START HERE",
+      "planSavedTitle": "Your timeline",
+      "planSavedNote": "Moved into your Berlin home on {date}.",
+      "planSavedLink": "Review my plan"
+    },
+    "progress": {
+      "label": "Your progress",
+      "count": "{done} of {total} steps done",
+      "title": "A little closer to feeling at home.",
+      "next": "UP NEXT",
+      "allDone": "Every step checked off",
+      "allDoneTitle": "One less thing on your mind."
+    },
+    "detail": {
+      "back": "Back to overview",
+      "why": "Why it matters",
+      "when": "When to do it",
+      "how": "How to get started",
+      "packing": "What to have ready",
+      "packingCount": "{done} of {total} ready",
+      "packingHelp": "Tick a document when it is ready. Shared documents keep the same tick across steps; this does not mark a step done.",
+      "noDocuments": "No documents are listed for this step.",
+      "source": "Open official guidance",
+      "sourceNote": "Official websites open in a new tab. Check the current instructions before you apply.",
+      "reviewed": "Core guidance reviewed {date}. Individual requirements marked TO VERIFY still need checking.",
+      "complete": "Mark step as done",
+      "undo": "Mark step as not done",
+      "completed": "Step marked complete.",
+      "reopened": "Step reopened.",
+      "notApplicable": "Not relevant to you? You can mark this step complete once you have checked your route.",
+      "done": "This step is done.",
+      "notDone": "Not done yet."
+    },
+    "packing": {
+      "eyebrow": "A LITTLE PREPARATION",
+      "title": "Ready when you are.",
+      "intro": "Your packing lists, all in one place. Tick what you have ready before an appointment or application.",
+      "privacy": "These are checkboxes only. Amigro does not collect or upload your documents.",
+      "usedFor": "For: {steps}",
+      "count": "{done} of {total} items ready"
+    },
+    "plan": {
+      "eyebrow": "AT YOUR OWN PACE",
+      "title": "A plan that fits you.",
+      "intro": "Keep a useful date and your progress together, on this browser.",
+      "dateTitle": "When did you move in?",
+      "dateLabel": "Move-in date",
+      "dateHelp": "Use the date you moved into your Berlin home. You can leave this blank.",
+      "saveDate": "Save date",
+      "clearDate": "Clear date",
+      "dateSaved": "Move-in date saved.",
+      "dateCleared": "Move-in date cleared.",
+      "invalidDate": "Enter a complete date with a year from 1900 to 9999.",
+      "privacyTitle": "Just on this browser",
+      "privacyNote": "Your date and ticks are saved in this browser on this device. There is no account or document upload. Clearing browser data also clears your progress. Private browsing may remove it when you close the window.",
+      "reset": "Reset my progress",
+      "resetTitle": "Start again?",
+      "resetNote": "This clears your move-in date, completed steps and packing ticks from this browser.",
+      "resetConfirm": "Clear my progress",
+      "cancel": "Keep my progress",
+      "resetDone": "Your progress has been cleared."
+    },
+    "deadline": {
+      "label": "ADDRESS REGISTRATION REMINDER",
+      "date": "Plan for {date}",
+      "note": "This is 14 calendar days after your move-in date, for planning only. TO VERIFY: Exceptions and legal deadline adjustments may apply to you.",
+      "link": "Review address registration"
+    },
+    "storage": {
+      "saved": "Progress saved on this browser",
+      "saving": "Saving your progress…",
+      "loading": "Loading saved progress…",
+      "read": "Your saved progress could not be loaded. Changes are paused so your existing progress is protected.",
+      "corrupt": "Your saved checklist could not be read. Try loading again, or reset the saved data to start again.",
+      "write": "Your latest changes have not been saved. Keep this page open and try again.",
+      "retryLoad": "Retry loading",
+      "retrySave": "Try saving again",
+      "reset": "Reset saved data",
+      "resetTitle": "Reset saved data?",
+      "resetNote": "This clears your saved answers, dates, completed steps and document ticks on this browser. It cannot be undone.",
+      "resetConfirm": "Reset saved data",
+      "resetCancel": "Keep saved data"
+    },
+    "footer": "A little guidance for a new beginning. Amigro is an independent guide; official sources have the latest requirements.",
+    "bootstrap": {
+      "error": "The guide could not load. Check your connection and try again.",
+      "retry": "Try again"
+    },
+    "checklist": {
+      "subline": "Your first steps in Berlin",
+      "label": "First steps checklist",
+      "description": "A simple checklist for your first steps in Berlin.",
+      "nonEuLabel": "Non-EU only",
+      "corruptProgress": "Your saved progress could not be read. Changes are paused to protect it. Try loading again.",
+      "hint": "Tap a step for details. Use its checkbox to mark it complete.",
+      "completeLabel": "{title} completed",
+      "doneLabel": "Done"
+    },
+    "onboarding": {
+      "intro": "Amigro helps you organise the paperwork for settling in Berlin.",
+      "question": "Are you an EU citizen?",
+      "yes": "Yes",
+      "no": "No",
+      "start": "Start my checklist",
+      "change": "Change EU answer",
+      "save": "Save answer",
+      "cancel": "Keep current answer"
+    }
+  },
+  "documents": [
+    {
+      "id": "identity",
+      "label": "Valid passport or accepted identity document",
+      "note": "TO VERIFY: Check which identity documents the provider or authority accepts."
+    },
+    {
+      "id": "housing-confirmation",
+      "label": "Signed housing provider confirmation",
+      "note": "Wohnungsgeberbestätigung. A rental contract does not replace this."
+    },
+    {
+      "id": "registration-form",
+      "label": "Completed address registration form",
+      "note": "For an in-person appointment."
+    },
+    {
+      "id": "civil-certificates",
+      "label": "TO VERIFY: Birth or marriage certificates, if relevant"
+    },
+    {
+      "id": "consent",
+      "label": "TO VERIFY: Consent or authorisation for children or a representative"
+    },
+    {
+      "id": "status-evidence",
+      "label": "TO VERIFY: Employment contract, enrolment or other evidence of your status"
+    },
+    {
+      "id": "existing-insurance",
+      "label": "TO VERIFY: Details of your existing health insurance"
+    },
+    {
+      "id": "family-insurance",
+      "label": "TO VERIFY: Additional documents for family cover"
+    },
+    {
+      "id": "registration-confirmation",
+      "label": "TO VERIFY: Registration confirmation or accepted proof of address"
+    },
+    {
+      "id": "residence-document",
+      "label": "TO VERIFY: Current visa or residence document"
+    },
+    {
+      "id": "tax-income",
+      "label": "TO VERIFY: Tax ID and proof of income, if requested"
+    },
+    {
+      "id": "home-details",
+      "label": "Your home address and move-in date"
+    },
+    {
+      "id": "contribution-number",
+      "label": "Existing household contribution number, if someone already pays"
+    },
+    {
+      "id": "contribution-letter",
+      "label": "Contribution service letter and reference, if received"
+    },
+    {
+      "id": "exemption-evidence",
+      "label": "TO VERIFY: Evidence for an exemption or reduction"
+    },
+    {
+      "id": "insurance-proof",
+      "label": "TO VERIFY: Proof of health insurance accepted for your application"
+    },
+    {
+      "id": "funding-purpose",
+      "label": "TO VERIFY: Evidence of funding and your purpose of stay"
+    },
+    {
+      "id": "biometric-photo",
+      "label": "TO VERIFY: Digital biometric photo and any required photo code"
+    },
+    {
+      "id": "application-form",
+      "label": "TO VERIFY: Application form and documents for your residence route"
+    }
+  ],
+  "steps": [
+    {
+      "id": "anmeldung",
+      "title": "Register your address (Anmeldung)",
+      "whyItMatters": "Registering your Berlin address gives you an official registration confirmation for later administrative steps.",
+      "timing": "Register within 14 days of moving into your main or only home in Berlin. TO VERIFY: Whether a short-stay exception or legal deadline adjustment applies to you.",
+      "packingList": [
+        "identity",
+        "housing-confirmation",
+        "registration-form",
+        "civil-certificates",
+        "consent"
+      ],
+      "packingListNote": "For an in-person appointment, bring originals of the required identity documents, the signed housing provider confirmation and the completed registration form. A rental contract does not replace the housing provider confirmation. TO VERIFY: Extra documents for your household.",
+      "officialSourceUrl": "https://service.berlin.de/dienstleistung/120686/",
+      "nonEuOnly": false,
+      "shortTitle": "Register your address",
+      "germanName": "Anmeldung",
+      "timingShort": "Usually within 14 days of moving in",
+      "instructions": [
+        "Check the official checklist for your household.",
+        "Book a Bürgeramt appointment for an in-person registration. TO VERIFY: Check whether you qualify for online registration.",
+        "Have the listed documents ready, then keep your registration confirmation."
+      ],
+      "sourceName": "ServicePortal Berlin",
+      "deadline": {
+        "anchor": "moveInDate",
+        "days": 14
+      },
+      "sourceReviewedOn": "2026-10-27"
+    },
+    {
+      "id": "tax-id",
+      "title": "Receive your tax ID (Steueridentifikationsnummer)",
+      "whyItMatters": "Your tax ID identifies you for tax matters and stays with you for life.",
+      "timing": "After your first address registration in Germany, your tax ID is assigned automatically and sent by post. TO VERIFY: Delivery time and when to request a missing letter.",
+      "packingList": [],
+      "packingListNote": "Nothing to bring for automatic allocation after registration. If you already have a German tax ID, keep that number. TO VERIFY: The information needed if you request a missing letter.",
+      "officialSourceUrl": "https://online.portal.bzst.de/SharedDocs/Leistungsbeschreibung/EN/erneute_mitteilung_der_ID-Nr.html",
+      "nonEuOnly": false,
+      "shortTitle": "Receive your tax ID",
+      "germanName": "Steueridentifikationsnummer",
+      "timingShort": "After your first registration",
+      "instructions": [
+        "Make sure your address registration is complete.",
+        "Look out for the tax ID letter by post. Keep an existing German tax ID if you already have one.",
+        "TO VERIFY: If the letter is missing, check the current BZSt process before requesting it again."
+      ],
+      "sourceName": "Federal Central Tax Office (BZSt)",
+      "sourceReviewedOn": "2026-10-27"
+    },
+    {
+      "id": "health-insurance",
+      "title": "Arrange health insurance (Krankenversicherung)",
+      "whyItMatters": "Health insurance is compulsory in Germany and helps cover the cost of medical care.",
+      "timing": "Arrange continuous cover from your first day in Germany, including any gap before employment or regular insurance starts; do not wait for Anmeldung. TO VERIFY: Which cover is accepted for your status.",
+      "packingList": [
+        "identity",
+        "status-evidence",
+        "existing-insurance",
+        "family-insurance"
+      ],
+      "packingListNote": "TO VERIFY: Ask your insurer which identity, employment or study documents and previous-insurance details it needs; family cover may require extra evidence. Requirements depend on your circumstances.",
+      "officialSourceUrl": "https://www.make-it-in-germany.com/en/arriving-living/getting-started/health-insurance",
+      "nonEuOnly": false,
+      "shortTitle": "Arrange health insurance",
+      "germanName": "Krankenversicherung",
+      "timingShort": "Check right away",
+      "instructions": [
+        "Check that you have continuous cover from your first day in Germany.",
+        "TO VERIFY: Ask the insurer which type of cover fits your status and when it starts.",
+        "TO VERIFY: Request your personal checklist and confirmation of cover."
+      ],
+      "sourceName": "Make it in Germany",
+      "sourceReviewedOn": "2026-10-27"
+    },
+    {
+      "id": "bank-account",
+      "title": "Arrange a bank account (Girokonto)",
+      "whyItMatters": "A suitable bank account helps you receive income and pay rent and everyday bills.",
+      "timing": "Arrange an account when you need it for income, rent or bills. TO VERIFY: Whether your existing account is sufficient, and whether your chosen bank requires Anmeldung before opening an account.",
+      "packingList": [
+        "identity",
+        "registration-confirmation",
+        "residence-document",
+        "tax-income"
+      ],
+      "packingListNote": "Have your valid passport or another identity document accepted by the bank ready. TO VERIFY: The bank may also request proof of address, a visa or residence document, tax ID or proof of income; get its current checklist.",
+      "officialSourceUrl": "https://www.make-it-in-germany.com/en/arriving-living/getting-started/open-bank-account",
+      "nonEuOnly": false,
+      "shortTitle": "Arrange a bank account",
+      "germanName": "Girokonto",
+      "timingShort": "When you need it for payments",
+      "instructions": [
+        "Compare account fees and services.",
+        "TO VERIFY: Check whether your existing account meets your needs and ask your chosen bank for its document checklist.",
+        "Follow the bank’s application and identity check process."
+      ],
+      "sourceName": "Make it in Germany",
+      "sourceReviewedOn": "2026-10-27"
+    },
+    {
+      "id": "rundfunkbeitrag",
+      "title": "Check the broadcasting contribution (Rundfunkbeitrag)",
+      "whyItMatters": "One broadcasting contribution normally covers one dwelling, so checking who pays helps you avoid duplicate payments.",
+      "timing": "After moving in, check whether someone already pays for your dwelling before registering or responding to a contribution-service letter. TO VERIFY: Your registration deadline, payment start date and any exemption or reduction.",
+      "packingList": [
+        "home-details",
+        "contribution-number",
+        "contribution-letter",
+        "exemption-evidence"
+      ],
+      "packingListNote": "Have your address and move-in date, any contribution-service letter and the existing household contribution number, if someone already pays, ready for the online forms. TO VERIFY: Special accommodation rules and evidence for an exemption or reduction.",
+      "officialSourceUrl": "https://www.rundfunkbeitrag.de/welcome",
+      "nonEuOnly": false,
+      "shortTitle": "Check the broadcasting fee",
+      "germanName": "Rundfunkbeitrag",
+      "timingShort": "After moving into your home",
+      "instructions": [
+        "Check whether someone already pays for your dwelling.",
+        "Use the official contribution service to register or respond to a letter.",
+        "TO VERIFY: Check whether an exemption, reduction or special accommodation rule applies."
+      ],
+      "sourceName": "ARD ZDF Deutschlandradio Beitragsservice",
+      "sourceReviewedOn": "2026-10-27"
+    },
+    {
+      "id": "residence-permit",
+      "title": "Check your residence permit (Aufenthaltserlaubnis)",
+      "whyItMatters": "The appropriate residence permission allows you to stay in Germany for the purpose and period it covers.",
+      "timing": "Check immediately, even though this step is listed last. TO VERIFY: Whether you need to apply, your application window and the deadline before your current permission to stay expires.",
+      "packingList": [
+        "identity",
+        "residence-document",
+        "insurance-proof",
+        "registration-confirmation",
+        "funding-purpose",
+        "biometric-photo",
+        "application-form"
+      ],
+      "packingListNote": "TO VERIFY: Prepare the documents on the official checklist for your exact residence route; the items here are a starting list, not a complete or universal requirement.",
+      "officialSourceUrl": "https://www.berlin.de/einwanderung/en/services/our-services/artikel.878424.en.php",
+      "nonEuOnly": true,
+      "applicabilityNote": "For non-EU newcomers only. TO VERIFY: Non-EU nationality does not automatically mean this permit is required; EEA citizens, Swiss citizens, family members and people whose visa covers their entire stay may follow different rules.",
+      "shortTitle": "Check your residence permit",
+      "germanName": "Aufenthaltserlaubnis",
+      "timingShort": "Check your deadline right away",
+      "instructions": [
+        "TO VERIFY: Find the residence route for your nationality and purpose of stay.",
+        "Open Berlin’s official service list. Use the online application for your route if available; otherwise follow the contact instructions.",
+        "TO VERIFY: Confirm your exact application deadline and document checklist."
+      ],
+      "sourceName": "Berlin Immigration Office",
+      "sourceReviewedOn": "2026-10-27"
+    }
+  ]
+}
