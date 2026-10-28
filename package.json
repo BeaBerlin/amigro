@@ -1,0 +1,11 @@
+{
+  "name": "amigro",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A buildless, mobile-first guide to settling in Berlin.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check app.js && node --check js/model.js && node --test tests/*.test.js"
+  }
+}
