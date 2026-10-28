@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "ui": {
-    "brand": "Amigro",
+    "brand": "AMIGRO",
     "pageTitle": "Amigro — Your first steps in Berlin",
     "description": "A simple guide to your first bureaucratic steps in Berlin. Keep your progress and prepare your documents, one step at a time.",
     "locale": "en-GB",
@@ -49,10 +49,10 @@
     },
     "detail": {
       "back": "Back to overview",
-      "why": "Why it matters",
-      "when": "When to do it",
+      "why": "Why this matters",
+      "when": "By when",
       "how": "How to get started",
-      "packing": "What to have ready",
+      "packing": "What to bring",
       "packingCount": "{done} of {total} ready",
       "packingHelp": "Tick a document when it is ready. Shared documents keep the same tick across steps; this does not mark a step done.",
       "noDocuments": "No documents are listed for this step.",
@@ -65,7 +65,9 @@
       "reopened": "Step reopened.",
       "notApplicable": "Not relevant to you? You can mark this step complete once you have checked your route.",
       "done": "This step is done.",
-      "notDone": "Not done yet."
+      "notDone": "Not done yet.",
+      "packingReminder": "Missing a document can mean another appointment, so check this list before you go.",
+      "sourceHeading": "Official source"
     },
     "packing": {
       "eyebrow": "A LITTLE PREPARATION",
@@ -128,19 +130,62 @@
       "description": "A simple checklist for your first steps in Berlin.",
       "nonEuLabel": "Non-EU only",
       "corruptProgress": "Your saved progress could not be read. Changes are paused to protect it. Try loading again.",
-      "hint": "Tap a step for details. Use its checkbox to mark it complete.",
+      "hint": "No more guessing. Just your next step.",
       "completeLabel": "{title} completed",
       "doneLabel": "Done"
     },
     "onboarding": {
-      "intro": "Amigro helps you organise the paperwork for settling in Berlin.",
+      "intro": "Just arrived in Germany? Amigro shows you what to do first, what can wait, and which documents to bring to every appointment. Tick off each step and always see what's next.",
       "question": "Are you an EU citizen?",
       "yes": "Yes",
       "no": "No",
       "start": "Start my checklist",
       "change": "Change EU answer",
       "save": "Save answer",
-      "cancel": "Keep current answer"
+      "cancel": "Keep current answer",
+      "headline": "Every newcomer needs an amigo.",
+      "subline": "Your guide through German bureaucracy, step by step."
+    },
+    "about": {
+      "label": "About",
+      "headline": "One app. One clear path. One step at a time.",
+      "paragraph": "Amigro is a mobile app for people who have just arrived in Germany. German bureaucracy is complex and mostly in German, which leaves many newcomers anxious, unsure where to start and at risk of mistakes with real consequences. Amigro brings all the first steps together in one checklist, in the order they need to happen, so users always know what comes next. For every appointment, a packing list shows exactly which documents to bring, so nobody is sent away and has to start again.",
+      "reviewNote": "TO VERIFY: The checklist is a guide, not a fixed order. Check health insurance and residence requirements right away. Document lists are starting lists, not complete requirements for every situation. The tax ID step has no documents to bring for automatic allocation.",
+      "faq": [
+        {
+          "question": "Who is it for?",
+          "answer": "Migrants and newcomers in their first weeks in Germany."
+        },
+        {
+          "question": "Where?",
+          "answer": "Starting with Berlin, with more cities to follow."
+        },
+        {
+          "question": "Do I need every step?",
+          "answer": "Not always. The residence permit, for example, depends on your nationality."
+        },
+        {
+          "question": "Which documents do I need?",
+          "answer": "Every step lists the documents to bring with you."
+        },
+        {
+          "question": "I arrived a few months ago. Is it still useful?",
+          "answer": "Yes, tick off the steps you already did and see what is still missing."
+        },
+        {
+          "question": "What about deadlines?",
+          "answer": "Amigro tells you which steps have a deadline and why it matters."
+        },
+        {
+          "question": "Legal advice?",
+          "answer": "No, every step links to the official source."
+        },
+        {
+          "question": "Languages?",
+          "answer": "English first, more to follow."
+        }
+      ],
+      "footer": "Made by Fired Up C12 Team Jazz. Free to use."
     }
   },
   "documents": [

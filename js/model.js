@@ -57,9 +57,10 @@ export function validateContent(content) {
   const copyPaths = {
     '': ['brand', 'pageTitle'],
     checklist: ['subline', 'label', 'description', 'hint', 'completeLabel', 'doneLabel', 'nonEuLabel'],
-    onboarding: ['intro', 'question', 'yes', 'no', 'start', 'change', 'save', 'cancel'],
+    onboarding: ['headline', 'subline', 'intro', 'question', 'yes', 'no', 'start', 'change', 'save', 'cancel'],
     progress: ['label', 'count'],
-    detail: ['back', 'why', 'when', 'packing', 'packingHelp', 'noDocuments', 'source', 'sourceNote', 'complete', 'undo', 'done', 'notDone'],
+    detail: ['back', 'why', 'when', 'packing', 'packingReminder', 'packingHelp', 'noDocuments', 'sourceHeading', 'source', 'sourceNote', 'complete', 'undo', 'done', 'notDone'],
+    about: ['label', 'headline', 'paragraph', 'reviewNote', 'footer'],
     storage: ['saved', 'saving', 'loading', 'read', 'corrupt', 'write', 'retryLoad', 'retrySave', 'reset', 'resetTitle', 'resetNote', 'resetConfirm', 'resetCancel'],
     bootstrap: ['error', 'retry']
   };
@@ -68,6 +69,8 @@ export function validateContent(content) {
     const copy = section ? content.ui?.[section] : content.ui;
     if (!keys.every(key => nonempty(copy?.[key]))) throw new Error('invalid-content-copy');
   }
+  if (!Array.isArray(content.ui.about.faq) || !content.ui.about.faq.length ||
+      !content.ui.about.faq.every(item => nonempty(item?.question) && nonempty(item?.answer))) throw new Error('invalid-content-faq');
   if (!['{done}', '{total}'].every(token => content.ui.progress.count.includes(token)) || !content.ui.checklist.completeLabel.includes('{title}')) throw new Error('invalid-content-template');
   for (const items of [content.steps, content.documents]) {
     if (!items.every(item => item && nonempty(item.id)) || new Set(items.map(item => item.id)).size !== items.length) throw new Error('invalid-content-id');

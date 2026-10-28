@@ -55,19 +55,40 @@ function showChecklist(content) {
   document.querySelector('meta[name="description"]').content = ui.checklist.description;
 
   const header = element('header', 'app-header');
+  const headerRow = element('div', 'header-row');
   const brand = element('div', 'brand');
-  const mark = element('img', 'brand-mark');
-  mark.src = './assets/mark.svg';
-  mark.alt = '';
-  mark.width = 38;
-  mark.height = 38;
-  brand.append(mark, element('h1', null, ui.brand));
-  header.append(brand, element('p', 'subline', ui.checklist.subline));
+  const brandTitle = element('h1', 'brand-title');
+  const logo = element('img', 'brand-logo');
+  logo.src = './assets/brand/amigro-logo.png';
+  logo.alt = ui.brand;
+  logo.height = 32;
+  brandTitle.append(logo);
+  brand.append(brandTitle);
+  const aboutButton = element('button', 'about-link', ui.about.label);
+  aboutButton.type = 'button';
+  aboutButton.hidden = true;
+  aboutButton.setAttribute('aria-controls', 'about-view');
+  aboutButton.addEventListener('click', () => {
+    if (!canUseChecklist(store.snapshot()) || activeView !== 'overview') return;
+    overviewScroll = window.scrollY;
+    activeView = 'about';
+    update(store.snapshot());
+    aboutTitle.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
+  const headerSubline = element('p', 'subline', ui.checklist.subline);
+  headerRow.append(brand, aboutButton);
+  header.append(headerRow, headerSubline);
 
   const welcome = element('section', 'welcome-view');
   welcome.hidden = true;
-  const welcomeIntro = element('p', 'welcome-intro', ui.onboarding.intro);
-  welcome.append(welcomeIntro);
+  const welcomeCopy = element('div', 'welcome-copy');
+  welcomeCopy.append(
+    element('h2', 'welcome-headline', ui.onboarding.headline),
+    element('p', 'welcome-subline', ui.onboarding.subline),
+    element('p', 'welcome-intro', ui.onboarding.intro)
+  );
+  welcome.append(welcomeCopy);
   const welcomeForm = element('form', 'welcome-form');
   const citizenship = element('fieldset', 'citizenship-question');
   citizenship.disabled = true;
@@ -153,6 +174,35 @@ function showChecklist(content) {
   detail.id = 'step-detail';
   detail.hidden = true;
   detail.setAttribute('aria-labelledby', 'detail-title');
+  const about = element('section', 'about-view');
+  about.id = 'about-view';
+  about.hidden = true;
+  about.setAttribute('aria-labelledby', 'about-title');
+  const aboutBack = element('button', 'back-button', ui.detail.back);
+  aboutBack.type = 'button';
+  aboutBack.addEventListener('click', () => {
+    activeView = 'overview';
+    update(store.snapshot());
+    aboutButton.focus({ preventScroll: true });
+    window.scrollTo({ top: overviewScroll, behavior: 'instant' });
+  });
+  const aboutTitle = element('h2', 'about-headline', ui.about.headline);
+  aboutTitle.id = 'about-title';
+  aboutTitle.tabIndex = -1;
+  const faq = element('dl', 'about-faq');
+  for (const item of ui.about.faq) {
+    const pair = element('div', 'faq-pair');
+    pair.append(element('dt', null, item.question), element('dd', null, item.answer));
+    faq.append(pair);
+  }
+  about.append(
+    aboutBack,
+    aboutTitle,
+    element('p', 'about-paragraph', ui.about.paragraph),
+    element('p', 'about-review-note', ui.about.reviewNote),
+    faq,
+    element('p', 'about-footer', ui.about.footer)
+  );
   const inputs = new Map();
   const documentInputs = new Map();
   let overviewScroll = 0;
@@ -225,6 +275,7 @@ function showChecklist(content) {
 
     const packing = element('section', 'detail-section');
     packing.append(element('h3', null, ui.detail.packing));
+    packing.append(element('p', 'packing-reminder', ui.detail.packingReminder));
     if (step.packingList.length) {
       packing.append(element('p', 'packing-help', ui.detail.packingHelp));
       const packingList = element('ul', 'document-list');
@@ -267,7 +318,13 @@ function showChecklist(content) {
     source.href = step.officialSourceUrl;
     source.target = '_blank';
     source.rel = 'noopener noreferrer';
-    detail.append(source, element('p', 'source-note', ui.detail.sourceNote));
+    const sourceSection = element('section', 'detail-section source-section');
+    sourceSection.append(
+      element('h3', null, ui.detail.sourceHeading),
+      source,
+      element('p', 'source-note', ui.detail.sourceNote)
+    );
+    detail.append(sourceSection);
 
     update(store.snapshot());
     title.focus({ preventScroll: true });
@@ -355,7 +412,7 @@ function showChecklist(content) {
 
   const status = element('p', 'save-status');
   status.setAttribute('role', 'status');
-  root.replaceChildren(header, errorBox, welcome, overview, detail, status, resetDialog);
+  root.replaceChildren(header, errorBox, welcome, overview, detail, about, status, resetDialog);
 
   // Updating existing inputs keeps keyboard focus and native checkbox behaviour.
   function update(snapshot) {
@@ -363,13 +420,17 @@ function showChecklist(content) {
     const { visibleSteps, done, total } = getChecklistProgress(content, snapshot.state);
     const visibleIds = new Set(visibleSteps.map(step => step.id));
     welcome.hidden = !snapshot.ready || ready;
-    welcomeIntro.hidden = editingAnswer;
+    welcomeCopy.hidden = editingAnswer;
     cancelAnswer.hidden = !editingAnswer;
     startButton.textContent = editingAnswer ? ui.onboarding.save : ui.onboarding.start;
     citizenship.disabled = !snapshot.ready || ready;
     startButton.disabled = !snapshot.ready || ready || selectedAnswer === null;
     overview.hidden = !ready || activeView !== 'overview';
     detail.hidden = !ready || activeView !== 'detail';
+    about.hidden = !ready || activeView !== 'about';
+    aboutButton.hidden = !ready || activeView !== 'overview';
+    aboutButton.disabled = !ready;
+    headerSubline.hidden = !ready || activeView !== 'overview';
     changeAnswer.disabled = !ready;
     let stepNumber = 0;
     for (const [id, { input, row, doneBadge, number }] of inputs) {
@@ -404,7 +465,7 @@ function showChecklist(content) {
     resetButton.hidden = !snapshot.error || snapshot.ready;
     resetButton.disabled = snapshot.loading || snapshot.saving;
     confirmReset.disabled = snapshot.loading || snapshot.saving;
-    status.hidden = Boolean(snapshot.error) || (snapshot.ready && !ready);
+    status.hidden = Boolean(snapshot.error) || (snapshot.ready && !ready) || activeView === 'about';
     if (snapshot.error) {
       const message = ui.storage[snapshot.error];
       if (errorText.textContent !== message) errorText.textContent = message;
