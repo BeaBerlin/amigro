@@ -1,4 +1,7 @@
-import { createProgressStore, getChecklistProgress, validateContent } from './js/model.js';
+import { createProgressStore, getChecklistProgress, getStatusAnswers, getStatusUpdate, hasCompleteStatus, validateContent } from './js/model.js';
+import { getLegacyStorage } from './vendor/async-storage/createAsyncStorage.js';
+
+const AsyncStorage = getLegacyStorage();
 
 const root = document.querySelector('#app');
 const contentUrl = new URL('./data/steps.json', import.meta.url);
@@ -46,10 +49,7 @@ async function loadChecklist() {
 
 function showChecklist(content) {
   const { ui, steps, documents } = content;
-  const store = createProgressStore({
-    getItem: key => window.localStorage.getItem(key),
-    setItem: (key, value) => window.localStorage.setItem(key, value)
-  }, content);
+  const store = createProgressStore(AsyncStorage, content);
 
   document.title = ui.pageTitle;
   document.querySelector('meta[name="description"]').content = ui.checklist.description;
@@ -90,12 +90,39 @@ function showChecklist(content) {
   );
   welcome.append(welcomeCopy);
   const welcomeForm = element('form', 'welcome-form');
-  const citizenship = element('fieldset', 'citizenship-question');
-  citizenship.disabled = true;
-  const question = element('legend', null, ui.onboarding.question);
-  question.tabIndex = -1;
-  citizenship.append(question);
-  const answers = element('div', 'citizenship-options');
+  let draftAnswers = getStatusAnswers({});
+  let draftInitialized = false;
+  const answerInputs = new Map();
+  const questionGroups = [];
+  for (const question of ui.onboarding.questions) {
+    const fieldset = element('fieldset', 'status-question');
+    fieldset.disabled = true;
+    const legend = element('legend', null, question.label);
+    legend.tabIndex = -1;
+    fieldset.append(legend);
+    const answers = element('div', 'status-options');
+    const inputs = new Map();
+    for (const [value, label] of [[true, ui.onboarding.yes], [false, ui.onboarding.no]]) {
+      const option = element('label', 'status-option');
+      const input = element('input');
+      input.type = 'radio';
+      input.name = `status-${question.id}`;
+      input.value = String(value);
+      input.required = true;
+      input.addEventListener('change', () => {
+        draftAnswers[question.id] = value;
+        update(store.snapshot());
+      });
+      option.append(input, element('span', null, label));
+      answers.append(option);
+      inputs.set(value, input);
+    }
+    answerInputs.set(question.id, inputs);
+    fieldset.append(answers);
+    questionGroups.push(fieldset);
+    welcomeForm.append(fieldset);
+  }
+  const firstQuestion = questionGroups[0].querySelector('legend');
   const startButton = element('button', 'start-button', ui.onboarding.start);
   startButton.type = 'submit';
   startButton.disabled = true;
@@ -104,42 +131,47 @@ function showChecklist(content) {
   cancelAnswer.hidden = true;
   cancelAnswer.addEventListener('click', () => {
     editingAnswer = false;
+    activeView = editReturnView;
+    fillAnswers(store.snapshot().state);
     update(store.snapshot());
-    changeAnswer.focus({ preventScroll: true });
-    window.scrollTo({ top: overviewScroll, behavior: 'instant' });
+    editTrigger.focus({ preventScroll: true });
+    window.scrollTo({ top: editScroll, behavior: 'instant' });
   });
-  let selectedAnswer = null;
-  const answerInputs = new Map();
-  for (const [value, label] of [[true, ui.onboarding.yes], [false, ui.onboarding.no]]) {
-    const option = element('label', 'citizenship-option');
-    const input = element('input');
-    input.type = 'radio';
-    input.name = 'eu-citizen';
-    input.value = String(value);
-    input.required = true;
-    input.addEventListener('change', () => {
-      selectedAnswer = value;
-      update(store.snapshot());
-    });
-    option.append(input, element('span', null, label));
-    answers.append(option);
-    answerInputs.set(value, input);
-  }
-  citizenship.append(answers);
-  welcomeForm.append(citizenship, startButton, cancelAnswer);
+  welcomeForm.append(startButton, cancelAnswer);
   welcome.append(welcomeForm);
   welcomeForm.addEventListener('submit', event => {
     event.preventDefault();
-    if (!store.snapshot().ready || selectedAnswer === null) return;
+    if (!store.snapshot().ready || !hasCompleteStatus(draftAnswers)) return;
+    const wasEditing = editingAnswer;
     editingAnswer = false;
-    activeView = 'overview';
-    store.update({ euCitizen: selectedAnswer });
-    progressHeading.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    activeView = wasEditing ? editReturnView : 'overview';
+    store.update(getStatusUpdate(draftAnswers));
+    (wasEditing ? editTrigger : progressHeading).focus({ preventScroll: true });
+    window.scrollTo({ top: wasEditing ? editScroll : 0, behavior: 'instant' });
   });
 
   const list = element('ol', 'checklist');
+  list.id = 'checklist-steps';
   list.setAttribute('aria-label', ui.checklist.label);
+  const viewSwitch = element('div', 'view-switch');
+  viewSwitch.setAttribute('role', 'group');
+  viewSwitch.setAttribute('aria-label', ui.checklist.viewLabel);
+  const viewButtons = new Map();
+  let checklistView = 'list';
+  for (const [view, label] of [['list', ui.checklist.listView], ['path', ui.checklist.pathView]]) {
+    const button = element('button', 'view-button', label);
+    button.type = 'button';
+    button.disabled = true;
+    button.setAttribute('aria-controls', list.id);
+    button.setAttribute('aria-pressed', String(view === checklistView));
+    button.addEventListener('click', () => {
+      if (!canUseChecklist(store.snapshot())) return;
+      checklistView = view;
+      update(store.snapshot());
+    });
+    viewButtons.set(view, button);
+    viewSwitch.append(button);
+  }
   const overview = element('div', 'overview-view');
   overview.id = 'overview';
   overview.hidden = true;
@@ -155,20 +187,10 @@ function showChecklist(content) {
   progressBar.value = 0;
   progressBar.setAttribute('aria-labelledby', 'progress-count');
   progress.append(progressHeading, progressCount, progressBar);
-  overview.append(progress, element('p', 'overview-hint', ui.checklist.hint), list);
+  overview.append(viewSwitch, progress, element('p', 'overview-hint', ui.checklist.hint), list);
   const changeAnswer = element('button', 'change-answer', ui.onboarding.change);
   changeAnswer.type = 'button';
-  changeAnswer.addEventListener('click', () => {
-    const snapshot = store.snapshot();
-    if (!canUseChecklist(snapshot)) return;
-    overviewScroll = window.scrollY;
-    editingAnswer = true;
-    selectedAnswer = snapshot.state.euCitizen;
-    for (const [answer, input] of answerInputs) input.checked = answer === selectedAnswer;
-    update(snapshot);
-    question.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  });
+  changeAnswer.addEventListener('click', () => editAnswers(changeAnswer));
   overview.append(changeAnswer);
   const detail = element('section', 'detail-view');
   detail.id = 'step-detail';
@@ -189,6 +211,9 @@ function showChecklist(content) {
   const aboutTitle = element('h2', 'about-headline', ui.about.headline);
   aboutTitle.id = 'about-title';
   aboutTitle.tabIndex = -1;
+  const aboutEditAnswers = element('button', 'secondary-button about-edit', ui.onboarding.change);
+  aboutEditAnswers.type = 'button';
+  aboutEditAnswers.addEventListener('click', () => editAnswers(aboutEditAnswers));
   const faq = element('dl', 'about-faq');
   for (const item of ui.about.faq) {
     const pair = element('div', 'faq-pair');
@@ -198,6 +223,7 @@ function showChecklist(content) {
   about.append(
     aboutBack,
     aboutTitle,
+    aboutEditAnswers,
     element('p', 'about-paragraph', ui.about.paragraph),
     element('p', 'about-review-note', ui.about.reviewNote),
     faq,
@@ -212,9 +238,32 @@ function showChecklist(content) {
   let detailDoneStatus = null;
   let activeView = 'overview';
   let editingAnswer = false;
+  let editReturnView = 'overview';
+  let editTrigger = changeAnswer;
+  let editScroll = 0;
 
   function canUseChecklist(snapshot) {
-    return snapshot.ready && typeof snapshot.state.euCitizen === 'boolean' && !editingAnswer;
+    return snapshot.ready && hasCompleteStatus(getStatusAnswers(snapshot.state)) && !editingAnswer;
+  }
+
+  function fillAnswers(state) {
+    draftAnswers = getStatusAnswers(state);
+    for (const [key, inputs] of answerInputs) {
+      for (const [answer, input] of inputs) input.checked = answer === draftAnswers[key];
+    }
+  }
+
+  function editAnswers(trigger) {
+    const snapshot = store.snapshot();
+    if (!canUseChecklist(snapshot)) return;
+    editReturnView = activeView;
+    editTrigger = trigger;
+    editScroll = window.scrollY;
+    editingAnswer = true;
+    fillAnswers(snapshot.state);
+    update(snapshot);
+    firstQuestion.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
   // Both views edit the same record, through the existing ordered save queue.
@@ -236,7 +285,7 @@ function showChecklist(content) {
 
   function showDetail(step, trigger) {
     const snapshot = store.snapshot();
-    if (!canUseChecklist(snapshot) || (snapshot.state.euCitizen && step.nonEuOnly)) return;
+    if (!canUseChecklist(snapshot) || !getChecklistProgress(content, snapshot.state).visibleSteps.some(item => item.id === step.id)) return;
     activeView = 'detail';
     overviewScroll = window.scrollY;
     lastStepButton = trigger;
@@ -345,7 +394,9 @@ function showChecklist(content) {
     if (step.nonEuOnly) text.append(element('span', 'step-note', ui.checklist.nonEuLabel));
     const doneBadge = element('span', 'done-badge', ui.checklist.doneLabel);
     doneBadge.hidden = true;
-    text.append(doneBadge);
+    const nextBadge = element('span', 'next-badge', ui.checklist.nextLabel);
+    nextBadge.hidden = true;
+    text.append(doneBadge, nextBadge);
     const input = element('input', 'step-checkbox');
     input.type = 'checkbox';
     input.disabled = true;
@@ -356,7 +407,7 @@ function showChecklist(content) {
     open.append(number, text);
     row.append(open, completeControl);
     list.append(row);
-    inputs.set(step.id, { input, row, doneBadge, number });
+    inputs.set(step.id, { input, row, open, title, step, doneBadge, nextBadge, number });
 
     input.addEventListener('change', () => {
       if (setStepDone(step.id, input.checked) === false) {
@@ -399,10 +450,9 @@ function showChecklist(content) {
     resetDialog.close();
     editingAnswer = false;
     activeView = 'overview';
-    selectedAnswer = null;
-    for (const input of answerInputs.values()) input.checked = false;
+    draftInitialized = false;
     store.reset();
-    question.focus({ preventScroll: true });
+    firstQuestion.focus({ preventScroll: true });
     window.scrollTo({ top: 0, behavior: 'instant' });
   });
   resetDialog.append(resetTitle, resetNote, cancelReset, confirmReset);
@@ -416,15 +466,26 @@ function showChecklist(content) {
 
   // Updating existing inputs keeps keyboard focus and native checkbox behaviour.
   function update(snapshot) {
+    if (snapshot.ready && !draftInitialized) {
+      fillAnswers(snapshot.state);
+      draftInitialized = true;
+    }
     const ready = canUseChecklist(snapshot);
     const { visibleSteps, done, total } = getChecklistProgress(content, snapshot.state);
     const visibleIds = new Set(visibleSteps.map(step => step.id));
+    const nextStep = visibleSteps.find(step => !snapshot.state.completedSteps.includes(step.id));
+    const pathView = checklistView === 'path';
+    list.classList.toggle('is-path', pathView);
+    for (const [view, button] of viewButtons) {
+      button.disabled = !ready;
+      button.setAttribute('aria-pressed', String(view === checklistView));
+    }
     welcome.hidden = !snapshot.ready || ready;
     welcomeCopy.hidden = editingAnswer;
     cancelAnswer.hidden = !editingAnswer;
     startButton.textContent = editingAnswer ? ui.onboarding.save : ui.onboarding.start;
-    citizenship.disabled = !snapshot.ready || ready;
-    startButton.disabled = !snapshot.ready || ready || selectedAnswer === null;
+    for (const group of questionGroups) group.disabled = !snapshot.ready || ready;
+    startButton.disabled = !snapshot.ready || ready || !hasCompleteStatus(draftAnswers);
     overview.hidden = !ready || activeView !== 'overview';
     detail.hidden = !ready || activeView !== 'detail';
     about.hidden = !ready || activeView !== 'about';
@@ -432,14 +493,24 @@ function showChecklist(content) {
     aboutButton.disabled = !ready;
     headerSubline.hidden = !ready || activeView !== 'overview';
     changeAnswer.disabled = !ready;
+    aboutEditAnswers.disabled = !ready;
     let stepNumber = 0;
-    for (const [id, { input, row, doneBadge, number }] of inputs) {
+    for (const [id, { input, row, open, title, step, doneBadge, nextBadge, number }] of inputs) {
       row.hidden = !visibleIds.has(id);
+      const stepTitle = pathView ? step.shortTitle : step.title;
+      if (title.textContent !== stepTitle) title.textContent = stepTitle;
       if (!row.hidden) number.textContent = String(++stepNumber).padStart(2, '0');
       input.checked = snapshot.state.completedSteps.includes(id);
       input.disabled = !ready || row.hidden;
+      open.disabled = !ready || row.hidden;
       row.classList.toggle('is-complete', input.checked);
+      const isNext = pathView && id === nextStep?.id;
+      row.classList.toggle('is-next', isNext);
+      row.classList.toggle('is-last-visible', id === visibleSteps.at(-1)?.id);
+      if (isNext) open.setAttribute('aria-current', 'step');
+      else open.removeAttribute('aria-current');
       doneBadge.hidden = !input.checked;
+      nextBadge.hidden = !isNext;
     }
     progress.hidden = !ready;
     if (ready) {

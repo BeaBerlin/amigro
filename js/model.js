@@ -1,4 +1,22 @@
 export const STORAGE_KEY = 'amigro.progress.v1';
+export const STATUS_FIELDS = Object.freeze({
+  eu: 'euCitizen',
+  job: 'jobContract',
+  student: 'student',
+  family: 'bringingFamily'
+});
+
+export function getStatusAnswers(state) {
+  return Object.fromEntries(Object.entries(STATUS_FIELDS).map(([key, field]) => [key, state[field] ?? null]));
+}
+
+export function getStatusUpdate(answers) {
+  return Object.fromEntries(Object.entries(STATUS_FIELDS).map(([key, field]) => [field, answers[key] ?? null]));
+}
+
+export function hasCompleteStatus(answers) {
+  return Object.keys(STATUS_FIELDS).every(key => typeof answers[key] === 'boolean');
+}
 
 export function parseDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
@@ -21,7 +39,7 @@ export function formatDate(value, locale = 'en-GB') {
 }
 
 export function emptyProgress() {
-  return { version: 1, euCitizen: null, moveInDate: '', completedSteps: [], packedDocuments: [] };
+  return { version: 1, ...getStatusUpdate({}), moveInDate: '', completedSteps: [], packedDocuments: [] };
 }
 
 export function restoreProgress(raw, content) {
@@ -33,18 +51,25 @@ export function restoreProgress(raw, content) {
       ![...state.completedSteps, ...state.packedDocuments].every(id => typeof id === 'string')) {
     throw new Error('invalid-progress');
   }
-  // Records created before the welcome screen retain their progress and ask
-  // the question once. A missing answer is different from an explicit "No".
-  const euCitizen = Object.hasOwn(state, 'euCitizen') ? state.euCitizen : null;
-  if (euCitizen !== null && typeof euCitizen !== 'boolean') throw new Error('invalid-progress');
+  // Keep known legacy answers and ticks. Missing answers remain unanswered.
+  for (const field of Object.values(STATUS_FIELDS)) {
+    if (Object.hasOwn(state, field) && state[field] !== null && typeof state[field] !== 'boolean') throw new Error('invalid-progress');
+  }
   const known = (values, items) => [...new Set(values)].filter(id => items.some(item => item.id === id));
-  return { version: 1, euCitizen, moveInDate: state.moveInDate,
+  return { version: 1, ...getStatusUpdate(getStatusAnswers(state)), moveInDate: state.moveInDate,
     completedSteps: known(state.completedSteps, content.steps),
     packedDocuments: known(state.packedDocuments, content.documents) };
 }
 
+export function stepApplies(step, state) {
+  if (step.applies_if === undefined) return !(state.euCitizen === true && step.nonEuOnly);
+  const answers = getStatusAnswers(state);
+  return Object.entries(step.applies_if).every(([key, expected]) =>
+    key === '_review' || typeof answers[key] !== 'boolean' || answers[key] === expected);
+}
+
 export function getChecklistProgress(content, state) {
-  const visibleSteps = content.steps.filter(step => !(state.euCitizen === true && step.nonEuOnly));
+  const visibleSteps = content.steps.filter(step => stepApplies(step, state));
   return {
     visibleSteps,
     done: visibleSteps.filter(step => state.completedSteps.includes(step.id)).length,
@@ -56,8 +81,8 @@ export function validateContent(content) {
   const nonempty = value => typeof value === 'string' && value.trim().length > 0;
   const copyPaths = {
     '': ['brand', 'pageTitle'],
-    checklist: ['subline', 'label', 'description', 'hint', 'completeLabel', 'doneLabel', 'nonEuLabel'],
-    onboarding: ['headline', 'subline', 'intro', 'question', 'yes', 'no', 'start', 'change', 'save', 'cancel'],
+    checklist: ['subline', 'label', 'description', 'hint', 'completeLabel', 'doneLabel', 'nonEuLabel', 'viewLabel', 'listView', 'pathView', 'nextLabel'],
+    onboarding: ['headline', 'subline', 'intro', 'yes', 'no', 'start', 'change', 'save', 'cancel'],
     progress: ['label', 'count'],
     detail: ['back', 'why', 'when', 'packing', 'packingReminder', 'packingHelp', 'noDocuments', 'sourceHeading', 'source', 'sourceNote', 'complete', 'undo', 'done', 'notDone'],
     about: ['label', 'headline', 'paragraph', 'reviewNote', 'footer'],
@@ -69,6 +94,10 @@ export function validateContent(content) {
     const copy = section ? content.ui?.[section] : content.ui;
     if (!keys.every(key => nonempty(copy?.[key]))) throw new Error('invalid-content-copy');
   }
+  const questions = content.ui.onboarding.questions;
+  if (!Array.isArray(questions) || questions.length !== Object.keys(STATUS_FIELDS).length ||
+      new Set(questions.map(item => item?.id)).size !== questions.length ||
+      !questions.every(item => item && Object.hasOwn(STATUS_FIELDS, item.id) && nonempty(item.label))) throw new Error('invalid-content-questions');
   if (!Array.isArray(content.ui.about.faq) || !content.ui.about.faq.length ||
       !content.ui.about.faq.every(item => nonempty(item?.question) && nonempty(item?.answer))) throw new Error('invalid-content-faq');
   if (!['{done}', '{total}'].every(token => content.ui.progress.count.includes(token)) || !content.ui.checklist.completeLabel.includes('{title}')) throw new Error('invalid-content-template');
@@ -79,7 +108,12 @@ export function validateContent(content) {
     if (!nonempty(doc.label) || (doc.note !== undefined && !nonempty(doc.note))) throw new Error('invalid-content-document');
   }
   for (const step of content.steps) {
-    if (!['title', 'whyItMatters', 'timing', 'packingListNote'].every(key => nonempty(step[key])) ||
+    if (step.applies_if !== undefined) {
+      const rule = step.applies_if;
+      if (!rule || typeof rule !== 'object' || Array.isArray(rule) ||
+          !Object.entries(rule).every(([key, value]) => key === '_review' ? value === 'TO VERIFY' : Object.hasOwn(STATUS_FIELDS, key) && typeof value === 'boolean')) throw new Error('invalid-content-condition');
+    }
+    if (!['title', 'shortTitle', 'whyItMatters', 'timing', 'packingListNote'].every(key => nonempty(step[key])) ||
         typeof step.nonEuOnly !== 'boolean' || (step.nonEuOnly && !nonempty(step.applicabilityNote)) ||
         !Array.isArray(step.packingList) || new Set(step.packingList).size !== step.packingList.length ||
         !step.packingList.every(id => content.documents.some(doc => doc.id === id)) ||

@@ -44,18 +44,19 @@ h1 { margin: 0; font-size: 2.1rem; line-height: 1.2; font-weight: 600; letter-sp
 .welcome-headline, .about-headline { margin: 0 0 20px; font-size: 2rem; line-height: 1.2; font-weight: 700; letter-spacing: -.035em; overflow-wrap: anywhere; }
 .welcome-subline { margin: 0 0 20px; font-size: 1.1rem; line-height: 1.5; font-weight: 500; }
 .welcome-intro { margin: 0 0 28px; font-size: 1rem; line-height: 1.65; }
-.citizenship-question { min-width: 0; margin: 0; padding: 0; border: 0; }
-.citizenship-question legend { padding: 0; margin-bottom: 16px; font-size: 1rem; font-weight: 600; }
-.citizenship-question:disabled { opacity: .55; }
-.citizenship-options { display: grid; gap: 12px; }
-.citizenship-option { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 13px 16px; border: 1px solid var(--line); border-radius: 11px; cursor: pointer; }
-.citizenship-option:has(input:checked) { background: var(--mint); border-color: var(--green); }
-.citizenship-option input { width: 24px; height: 24px; flex-shrink: 0; margin: 0; accent-color: var(--green); }
+.status-question { min-width: 0; margin: 0 0 24px; padding: 0; border: 0; }
+.status-question legend { padding: 0; margin-bottom: 12px; font-size: 1rem; font-weight: 600; }
+.status-question:disabled { opacity: .55; }
+.status-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.status-option { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 13px 12px; border: 1px solid var(--line); border-radius: 11px; cursor: pointer; }
+.status-option:has(input:checked) { background: var(--mint); border-color: var(--green); }
+.status-option input { width: 24px; height: 24px; flex-shrink: 0; margin: 0; accent-color: var(--green); }
 .welcome-form .start-button { margin-top: 24px; }
 .welcome-form .secondary-button { width: 100%; margin-top: 12px; }
 .secondary-button, .change-answer { min-height: 48px; padding: 11px 15px; border: 1px solid var(--green); border-radius: 10px; background: var(--mint); color: var(--ink); cursor: pointer; }
 .secondary-button:disabled, .change-answer:disabled { opacity: .55; cursor: not-allowed; }
 .change-answer { width: 100%; margin-top: 24px; }
+.about-edit { margin-bottom: 20px; }
 .storage-error .secondary-button { margin-top: 10px; margin-left: 8px; }
 .reset-dialog { width: min(90vw, 420px); max-height: 90dvh; padding: 24px; overflow: auto; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); color: var(--ink); }
 .reset-dialog::backdrop { background: rgb(25 45 34 / .45); }
@@ -65,6 +66,10 @@ h1 { margin: 0; font-size: 2.1rem; line-height: 1.2; font-weight: 600; letter-sp
 .reset-confirm { min-height: 48px; padding: 11px 15px; border: 1px solid var(--green); border-radius: 10px; background: var(--green); color: var(--card); font-size: 1.2rem; font-weight: 700; cursor: pointer; }
 .reset-confirm:disabled { opacity: .55; cursor: wait; }
 .overview-hint { margin: 0 0 18px; color: var(--muted); font-size: .85rem; }
+.view-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-bottom: 20px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; }
+.view-button { min-height: 48px; padding: 10px 16px; border: 0; border-radius: 10px; color: var(--ink); background: transparent; font-size: 1.2rem; font-weight: 700; cursor: pointer; }
+.view-button[aria-pressed="true"] { color: var(--card); background: var(--green); }
+.view-button:disabled { opacity: .55; cursor: wait; }
 .progress-card { margin: 0 0 22px; padding: 20px; background: var(--card); border: 1px solid var(--green); border-radius: 16px; }
 .progress-heading { margin: 0 0 8px; font-size: .82rem; font-weight: 500; color: var(--muted); }
 .progress-count { margin: 0; font-size: 1.15rem; font-weight: 600; }
@@ -101,7 +106,19 @@ h1 { margin: 0; font-size: 2.1rem; line-height: 1.2; font-weight: 600; letter-sp
 .step-row:focus-within { border-color: var(--green); }
 .step-row.is-complete { background: var(--mint); border-color: var(--green); box-shadow: inset 4px 0 0 var(--green); }
 .is-complete .step-title { color: var(--ink); text-decoration: line-through; text-decoration-thickness: 1px; }
-.done-badge { display: block; width: fit-content; margin-top: 8px; padding: 2px 9px; border: 1px solid var(--green); border-radius: 999px; background: var(--card); color: var(--ink); font-size: .74rem; font-weight: 500; }
+.done-badge, .next-badge { display: block; width: fit-content; margin-top: 8px; padding: 2px 9px; border: 1px solid var(--green); border-radius: 999px; background: var(--card); color: var(--ink); font-size: .74rem; font-weight: 500; }
+.next-badge { color: var(--green); font-weight: 600; }
+.checklist.is-path { gap: 0; }
+.is-path .step-row { position: relative; grid-template-columns: minmax(0, 1fr) 48px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.is-path .step-row::before { content: ''; position: absolute; left: 27px; top: 44px; bottom: -44px; width: 2px; background: var(--line); pointer-events: none; }
+.is-path .step-row.is-last-visible::before { content: none; }
+.is-path .step-open { position: relative; grid-template-columns: 56px minmax(0, 1fr); align-items: start; gap: 16px; min-height: 112px; padding: 16px 0; border-radius: 12px; }
+.is-path .step-number { display: grid; place-items: center; position: relative; width: 56px; height: 56px; padding: 0; border: 2px solid var(--line); border-radius: 50%; background: var(--card); color: var(--ink); font-size: 1.2rem; font-weight: 700; line-height: 1; }
+.is-path .step-copy { padding-top: 5px; padding-bottom: 12px; }
+.is-path .complete-control { align-self: start; margin-top: 20px; }
+.is-path .is-complete .step-number { background: var(--mint); border-color: var(--green); }
+.is-path .is-next .step-number { background: var(--green); border-color: var(--green); color: var(--card); }
+.is-path .is-next .step-title { color: var(--green); font-weight: 600; }
 .save-status { margin: 22px 0 0; color: var(--muted); font-size: .78rem; }
 
 .back-button { display: inline-flex; align-items: center; gap: 9px; min-height: 48px; margin: 0 0 20px; padding: 10px 14px; color: var(--ink); background: var(--mint); border: 1px solid var(--green); border-radius: 10px; cursor: pointer; }

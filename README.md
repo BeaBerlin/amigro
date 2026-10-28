@@ -33,7 +33,13 @@ App assets, imports and the JSON request use relative paths, including under the
 
 ## App behaviour
 
-The first visit asks “Are you an EU citizen?” with no answer preselected. Yes shows five steps; No shows six, including the residence permit step. **Change EU answer** lets users correct their answer. Saving or cancelling that change preserves completed steps and document ticks; hidden residence-permit progress returns if the answer changes to No.
+The first visit asks four Yes/No questions: EU citizenship, moving in with a job contract, student status and bringing family. No answer is preselected, and all four are required before starting. **About → Edit answers** opens the same form later; **Edit answers** also remains available below the overview. Saving or cancelling returns to the view that opened the form and preserves completed steps and document ticks. Cancel discards the draft answers.
+
+The **List / Path** toggle at the top of the overview changes how the same checklist is displayed. Path uses the existing short titles, numbered circles and a connecting line. Done circles are mint (`#83FFA9`); the first unfinished applicable step is dark green (`#10984E`) and labelled **Next step**. Tapping a circle opens its detail. Both modes keep the overview checkboxes and share the same completion state and progress bar. Back returns to the selected mode. Switching modes does not change saved data; reloading starts in List while retaining saved progress.
+
+Checklist filtering reads the optional `applies_if` object on each step in `data/steps.json`. Supported condition keys are `eu`, `job`, `student` and `family`, with boolean values. Every listed condition must match. The reserved `_review: "TO VERIFY"` entry flags an unverified default for the team and is ignored by the filter. An empty object is unconditional; omitting the field retains the older `nonEuOnly` behaviour. Unknown answers do not hide steps in the model; the interface asks for all missing answers before showing the checklist.
+
+The existing first five steps have no conditions. The residence permit has `eu: false`. All six defaults are marked `TO VERIFY`; job, student and family answers do not hide any existing step because no verified rules for them were supplied. EU citizens see five steps and non-EU citizens see six. Hidden residence-permit progress returns if the EU answer changes to No. This update adds no steps or bureaucracy guidance and leaves document lists, deadlines, source URLs and review dates unchanged.
 
 Tap a step title to open its reason, timing, packing checklist and official guidance. The overview checkbox and detail completion button update the same saved record. Completed steps stay in order, gain a Done badge and a crossed-out title, and update the progress count. Document ticks are shared across steps using the same document ID; ticking a document does not complete a step. **Back to overview** restores focus and scroll position.
 
@@ -43,7 +49,7 @@ All user-facing copy, step guidance, packing lists and source links live in `dat
 
 ## Brand and press copy
 
-The brand update uses the exact supplied `assets/brand/amigro-icon.png` and `assets/brand/amigro-logo.png`, copied without image edits. The wordmark is left aligned at 32 px high; the icon is used for the browser favicon and Apple touch icon. The interface uses white, mint `#83FFA9`, dark green `#10984E` and near-black text. Primary buttons use large bold white text on dark green. Onboarding, the overview line, detail headings, packing reminder and About copy come from the JSON UI content. Step records, document records, order, deadlines, source links, review dates and saved-progress fields are unchanged.
+The brand update uses the exact supplied `assets/brand/amigro-icon.png` and `assets/brand/amigro-logo.png`, copied without image edits. The wordmark is left aligned at 32 px high; the icon is used for the browser favicon and Apple touch icon. The interface uses white, mint `#83FFA9`, dark green `#10984E` and near-black text. Primary buttons use large bold white text on dark green. Onboarding, the overview line, detail headings, packing reminder and About copy come from the JSON UI content. That brand update left the step guidance and saved-progress fields unchanged; the later questionnaire update adds status fields and applicability rules as described above.
 
 The supplied press copy claims a fixed order, complete packing lists and an appointment outcome that the existing step data does not promise. The About view flags this with `TO VERIFY`: health insurance and residence requirements may need attention immediately, document lists are starting lists, and the tax ID step has no documents to bring for automatic allocation. The original guidance remains in the step details.
 
@@ -51,7 +57,9 @@ This checkout is the plain HTML/CSS/JavaScript app. It has no Expo project or Ex
 
 ## Saved data and recovery
 
-The `amigro.progress.v1` localStorage record contains the EU answer, completed step IDs, document ticks and any previously saved move-in date. Older records without an EU answer show the welcome while retaining their other data. Dates are preserved but are not displayed by this interface.
+The official AsyncStorage web implementation stores the `amigro.progress.v1` record through its Promise-based compatibility backend, which uses browser localStorage. Vendored modules and their MIT licenses live in `vendor/`; see [dependency provenance](vendor/README.md). There is no runtime CDN request, package installation, React dependency or build step.
+
+The record contains `euCitizen`, `jobContract`, `student` and `bringingFamily` as boolean or null answers, alongside completed step IDs, document ticks and any previously saved move-in date. Existing records use the same storage key and backend. Missing answers remain null and reopen onboarding with known answers prefilled; migration does not write until the user submits. Dates and hidden ticks are preserved. Dates are not displayed by this interface.
 
 Storage loads before edits are enabled, and writes run in order. A failed save leaves the latest changes in memory with a visible warning and **Try saving again** button. Keep the page open until saving succeeds. Failed or unreadable reads pause editing to protect the existing record. Users can retry loading or choose **Reset saved data**, which requires confirmation and clears the entire saved checklist. Cancelling the confirmation preserves it.
 
@@ -68,6 +76,7 @@ app.js                 Content loading and simple views
 js/model.js            Content validation and ordered persistence
 data/steps.json        All user-facing content and official sources
 assets/brand/          Exact supplied PNG icon and wordmark
+vendor/                AsyncStorage web modules, idb, licenses and provenance
 .nojekyll              Static GitHub Pages publishing marker
 tests/model.test.js    Persistence, date and content checks
 ```
@@ -80,7 +89,7 @@ With Node.js installed, run:
 npm run check
 ```
 
-No package installation is needed. This runs JavaScript syntax checks and 15 automated tests covering saved-data migration, filtered totals, answer changes, reset, storage failures, ordered writes, content integrity and date utilities.
+No package installation is needed. This runs JavaScript syntax checks and 20 automated tests covering saved-data migration, all 16 status profiles, optional and combined applicability rules, filtered totals, answer changes, reset, the actual AsyncStorage web adapter, storage failures, ordered writes, content integrity and date utilities.
 
 The local review on **27 October 2026** ran those checks successfully and exercised the app in the in-app browser at **375 × 812** and **1280 × 900**. All six detail views fit without horizontal scrolling at both widths. Browser checks also covered first visit, reload persistence, shared document ticks, completion from both views, answer changes and cancellation, legacy records, corrupt storage, blocked reads/writes, reset confirmation, invalid content and malformed JSON. Welcome, overview and a long-title detail were checked at 375 px with 200% root text size. A temporary `/amigro/` hosting prefix returned HTTP 200 for the shell, CSS, JavaScript modules, JSON, SVG and `.nojekyll`; the app worked under that prefix. All six official-source URLs were opened during that review.
 
@@ -90,10 +99,15 @@ The later local brand update on **28 October 2026** passed JavaScript syntax che
 
 The branded version was published to the public URL on **28 October 2026**. All 15 tests passed before publication. Its eight app resources returned HTTP 200 with the expected content types and matched the local source, including both original PNGs. Live checks covered About and all six detail views at **375 × 812** and **1280 × 900**, EU filtering, cancellation, saved completion and shared document ticks after a reload. There was no horizontal overflow or browser console warning or error. Test changes were undone, restoring the previous checklist state. Physical-device and Expo Go checks remain unperformed.
 
+The questionnaire update was checked locally on **28 October 2026**. JavaScript syntax checks and all 20 automated tests passed. This environment provided Node without npm, so the check script's commands were run directly. Browser checks covered four required answers, first visit, About and overview editing, saving and cancellation with focus return, EU filtering, hidden progress preservation, shared document ticks, completion from both views, reload persistence and migration of an EU-only legacy record with existing ticks and date. Simulated blocked reads and writes retained visible warnings; retry saved the latest answers. Corrupt-data reset cancellation and confirmation were checked, and reset cleared all four answers. The questionnaire and all six detail views had no horizontal overflow at **375 × 812** and **1280 × 900**, with answer targets at least 56 px high. The first-visit form also fit at 375 px with 200% root text size. No browser console warnings or errors were reported. These checks used a temporary `/app/` hosting prefix. This questionnaire update has not been published, and physical-device and Expo Go checks have not been run.
+
+The Path view was checked locally on **28 October 2026**. Syntax checks and all 20 tests passed again. Browser checks at **375 × 812** and **1280 × 900** covered both modes, all six circle-to-detail links, Back focus, keyboard toggles, shared completion, out-of-order completion, undo, all-done states, EU filtering and reload persistence. Circles measured 56 × 56 px; toggle targets exceeded 48 px high. There was no horizontal overflow, including Path at 375 px with 200% root text size. Blocked storage reads kept the toggles disabled; failed-save warnings survived switching modes and cleared after retry. The browser reported no console warnings or errors. This update remains local and unpublished.
+
 For a manual smoke test after changes:
 
-1. Use a fresh browser origin, select Yes and start: expect five steps. Change the EU answer to No: expect six. Cancel another answer change and confirm nothing changes.
+1. Use a fresh browser origin and answer three questions: Start should remain disabled. Answer the fourth and start. EU Yes shows five steps; No shows six. Open **About → Edit answers**, change the answers, save and return to the overview. Reload and reopen the editor to confirm all four answers were retained. Cancel another change and confirm the previous answers remain.
 2. Open a detail, tick a shared document and mark the step done. Return to the overview and mark another step done; check the count and Done badges. Reload, then undo completion from each view.
 3. Check the tax-ID step’s empty packing list and the residence step’s applicability note. Open an official source and confirm it opens in a new tab.
 4. Repeat at 375 px and desktop width, then increase browser text size and test on a physical phone. Use disposable saved data when testing reset or simulated storage faults.
-5. Open **About**, check the FAQ, credit and `TO VERIFY` note, then return to the checklist and confirm its progress is unchanged.
+5. Open **About**, check the FAQ, credit and `TO VERIFY` note. Change EU No to Yes and back through the answer editor: hidden residence-permit ticks should return, and document ticks should remain unchanged. Existing EU-only saved records should prefill EU and ask for the other three answers.
+6. Mark a step done in List, switch to **Path**, and check its mint circle and the dark-green **Next step**. Tap a circle, complete or reopen that step, and return. Switch to List and reload to confirm the same ticks remain. Complete all visible steps: every circle should be mint with no Next step highlight.

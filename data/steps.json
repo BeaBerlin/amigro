@@ -132,19 +132,40 @@
       "corruptProgress": "Your saved progress could not be read. Changes are paused to protect it. Try loading again.",
       "hint": "No more guessing. Just your next step.",
       "completeLabel": "{title} completed",
-      "doneLabel": "Done"
+      "doneLabel": "Done",
+      "viewLabel": "Checklist view",
+      "listView": "List",
+      "pathView": "Path",
+      "nextLabel": "Next step"
     },
     "onboarding": {
       "intro": "Just arrived in Germany? Amigro shows you what to do first, what can wait, and which documents to bring to every appointment. Tick off each step and always see what's next.",
-      "question": "Are you an EU citizen?",
       "yes": "Yes",
       "no": "No",
       "start": "Start my checklist",
-      "change": "Change EU answer",
-      "save": "Save answer",
-      "cancel": "Keep current answer",
+      "change": "Edit answers",
+      "save": "Save answers",
+      "cancel": "Keep current answers",
       "headline": "Every newcomer needs an amigo.",
-      "subline": "Your guide through German bureaucracy, step by step."
+      "subline": "Your guide through German bureaucracy, step by step.",
+      "questions": [
+        {
+          "id": "eu",
+          "label": "Are you an EU citizen?"
+        },
+        {
+          "id": "job",
+          "label": "Are you moving in with a job contract?"
+        },
+        {
+          "id": "student",
+          "label": "Are you a student?"
+        },
+        {
+          "id": "family",
+          "label": "Are you bringing family?"
+        }
+      ]
     },
     "about": {
       "label": "About",
@@ -298,7 +319,10 @@
         "anchor": "moveInDate",
         "days": 14
       },
-      "sourceReviewedOn": "2026-10-27"
+      "sourceReviewedOn": "2026-10-27",
+      "applies_if": {
+        "_review": "TO VERIFY"
+      }
     },
     {
       "id": "tax-id",
@@ -318,7 +342,10 @@
         "TO VERIFY: If the letter is missing, check the current BZSt process before requesting it again."
       ],
       "sourceName": "Federal Central Tax Office (BZSt)",
-      "sourceReviewedOn": "2026-10-27"
+      "sourceReviewedOn": "2026-10-27",
+      "applies_if": {
+        "_review": "TO VERIFY"
+      }
     },
     {
       "id": "health-insurance",
@@ -343,7 +370,10 @@
         "TO VERIFY: Request your personal checklist and confirmation of cover."
       ],
       "sourceName": "Make it in Germany",
-      "sourceReviewedOn": "2026-10-27"
+      "sourceReviewedOn": "2026-10-27",
+      "applies_if": {
+        "_review": "TO VERIFY"
+      }
     },
     {
       "id": "bank-account",
@@ -368,7 +398,10 @@
         "Follow the bank’s application and identity check process."
       ],
       "sourceName": "Make it in Germany",
-      "sourceReviewedOn": "2026-10-27"
+      "sourceReviewedOn": "2026-10-27",
+      "applies_if": {
+        "_review": "TO VERIFY"
+      }
     },
     {
       "id": "rundfunkbeitrag",
@@ -393,7 +426,10 @@
         "TO VERIFY: Check whether an exemption, reduction or special accommodation rule applies."
       ],
       "sourceName": "ARD ZDF Deutschlandradio Beitragsservice",
-      "sourceReviewedOn": "2026-10-27"
+      "sourceReviewedOn": "2026-10-27",
+      "applies_if": {
+        "_review": "TO VERIFY"
+      }
     },
     {
       "id": "residence-permit",
@@ -422,7 +458,11 @@
         "TO VERIFY: Confirm your exact application deadline and document checklist."
       ],
       "sourceName": "Berlin Immigration Office",
-      "sourceReviewedOn": "2026-10-27"
+      "sourceReviewedOn": "2026-10-27",
+      "applies_if": {
+        "_review": "TO VERIFY",
+        "eu": false
+      }
     }
   ]
 }

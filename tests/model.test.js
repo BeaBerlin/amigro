@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { addDays, createProgressStore, emptyProgress, formatDate, getChecklistProgress, parseDate, restoreProgress, STORAGE_KEY, validateContent } from '../js/model.js';
+import { addDays, createProgressStore, emptyProgress, formatDate, getChecklistProgress, getStatusAnswers, getStatusUpdate, hasCompleteStatus, parseDate, restoreProgress, stepApplies, STATUS_FIELDS, STORAGE_KEY, validateContent } from '../js/model.js';
+import { getLegacyStorage } from '../vendor/async-storage/createAsyncStorage.js';
 
 const content = JSON.parse(await readFile(new URL('../data/steps.json', import.meta.url), 'utf8'));
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -33,14 +34,19 @@ test('restore deduplicates IDs, drops retired items and rejects incompatible rec
   }
 });
 
-test('legacy progress needs an answer without losing ticks; only boolean or null answers are accepted', () => {
+test('legacy progress retains known answers and ticks; missing status remains unanswered', () => {
   const legacy = { version: 1, moveInDate: '2026-10-27', completedSteps: ['anmeldung', 'residence-permit'], packedDocuments: ['identity'] };
-  assert.deepEqual(restoreProgress(JSON.stringify(legacy), content), { ...legacy, euCitizen: null });
+  assert.deepEqual(restoreProgress(JSON.stringify(legacy), content), { ...emptyProgress(), ...legacy });
   for (const answer of [true, false, null]) {
-    assert.equal(restoreProgress(JSON.stringify({ ...legacy, euCitizen: answer }), content).euCitizen, answer);
+    const restored = restoreProgress(JSON.stringify({ ...legacy, euCitizen: answer }), content);
+    assert.deepEqual(getStatusAnswers(restored), { eu: answer, job: null, student: null, family: null });
+    assert.equal(hasCompleteStatus(getStatusAnswers(restored)), false);
   }
-  for (const answer of ['true', 'false', 'yes', 0, 1, [], {}]) {
-    assert.throws(() => restoreProgress(JSON.stringify({ ...legacy, euCitizen: answer }), content));
+  for (const field of Object.values(STATUS_FIELDS)) {
+    for (const answer of [true, false, null]) assert.equal(restoreProgress(JSON.stringify({ ...legacy, [field]: answer }), content)[field], answer);
+    for (const answer of ['true', 'false', 'yes', 0, 1, [], {}]) {
+      assert.throws(() => restoreProgress(JSON.stringify({ ...legacy, [field]: answer }), content));
+    }
   }
 });
 
@@ -72,7 +78,7 @@ test('both citizenship answers survive a new store while existing date and ticks
     const reloaded = createProgressStore(storage, content);
     await reloaded.hydrate();
     assert.deepEqual(reloaded.snapshot().state, {
-      version: 1, euCitizen: answer, moveInDate: '2026-10-27', completedSteps: ['anmeldung'], packedDocuments: ['identity']
+      ...emptyProgress(), euCitizen: answer, moveInDate: '2026-10-27', completedSteps: ['anmeldung'], packedDocuments: ['identity']
     });
   }
 });
@@ -89,8 +95,8 @@ test('changing the EU answer preserves hidden step progress and shared documents
   assert.deepEqual(store.snapshot().state.packedDocuments, ['identity']);
 });
 
-test('explicit reset clears the onboarding answer together with the saved checklist', async () => {
-  let raw = JSON.stringify({ ...emptyProgress(), euCitizen: true, moveInDate: '2026-10-27', completedSteps: ['anmeldung'], packedDocuments: ['identity'] });
+test('explicit reset clears all status answers together with the saved checklist', async () => {
+  let raw = JSON.stringify({ ...emptyProgress(), ...getStatusUpdate({ eu: true, job: true, student: false, family: true }), moveInDate: '2026-10-27', completedSteps: ['anmeldung'], packedDocuments: ['identity'] });
   const store = createProgressStore({ getItem: () => raw, setItem(key, value) { raw = value; } }, content);
   await store.hydrate();
   await store.reset();
@@ -105,12 +111,19 @@ test('content validation rejects broken copy, duplicate IDs, unsafe sources and 
     value => { delete value.ui.detail.complete; },
     value => { delete value.ui.detail.packingReminder; },
     value => { delete value.ui.onboarding.headline; },
+    value => { value.ui.onboarding.questions.pop(); },
+    value => { value.ui.onboarding.questions[1].id = 'eu'; },
+    value => { value.ui.onboarding.questions[1].id = 'income'; },
+    value => { value.ui.onboarding.questions[0].label = ''; },
     value => { value.ui.about.faq = []; },
     value => { delete value.ui.about.faq[0].answer; },
     value => { delete value.ui.checklist.nonEuLabel; },
+    value => { delete value.ui.checklist.pathView; },
+    value => { value.ui.checklist.viewLabel = ''; },
     value => { value.ui.progress.count = 'All done'; },
     value => { value.documents.push(value.documents[0]); },
     value => { value.steps.push(value.steps[0]); },
+    value => { value.steps[0].shortTitle = ''; },
     value => { value.steps[0].packingList.push('missing-document'); },
     value => { value.steps[0].packingList.push(value.steps[0].packingList[0]); },
     value => { value.steps[0].officialSourceUrl = 'javascript:alert(1)'; },
@@ -122,6 +135,112 @@ test('content validation rejects broken copy, duplicate IDs, unsafe sources and 
     mutate(broken);
     assert.throws(() => validateContent(broken));
   }
+});
+
+test('all sixteen complete profiles keep the first five steps; only non-EU profiles see residence', () => {
+  for (let bits = 0; bits < 16; bits += 1) {
+    const answers = Object.fromEntries(Object.keys(STATUS_FIELDS).map((key, index) => [key, Boolean(bits & (1 << index))]));
+    assert.equal(hasCompleteStatus(answers), true);
+    const state = { ...emptyProgress(), ...getStatusUpdate(answers), completedSteps: content.steps.map(step => step.id) };
+    assert.deepEqual(getStatusAnswers(state), answers);
+    const progress = getChecklistProgress(content, state);
+    assert.deepEqual(progress.visibleSteps.map(step => step.id), content.steps.filter(step => !answers.eu || step.id !== 'residence-permit').map(step => step.id));
+    assert.equal(progress.total, answers.eu ? 5 : 6);
+    assert.equal(progress.done, progress.total);
+  }
+  for (const step of content.steps) assert.equal(step.applies_if._review, 'TO VERIFY');
+});
+
+test('optional rules retain legacy behaviour; conditions combine and unknown answers do not hide steps', () => {
+  const state = { ...emptyProgress(), ...getStatusUpdate({ eu: false, job: true, student: false, family: true }) };
+  assert.equal(stepApplies({ nonEuOnly: true }, { ...state, euCitizen: true }), false);
+  assert.equal(stepApplies({ nonEuOnly: true }, state), true);
+  assert.equal(stepApplies({ nonEuOnly: false }, { ...state, euCitizen: true }), true);
+  assert.equal(stepApplies({ applies_if: {} }, state), true);
+  const conditional = { applies_if: { job: true, student: false, family: true, _review: 'TO VERIFY' } };
+  assert.equal(stepApplies(conditional, state), true);
+  for (const field of ['jobContract', 'student', 'bringingFamily']) {
+    assert.equal(stepApplies(conditional, { ...state, [field]: !state[field] }), false);
+  }
+  assert.equal(stepApplies(conditional, emptyProgress()), true);
+  const custom = structuredClone(content);
+  custom.steps[0].applies_if = conditional.applies_if;
+  assert.equal(validateContent(custom), custom);
+  assert.equal(getChecklistProgress(custom, { ...state, student: true }).visibleSteps.some(step => step.id === custom.steps[0].id), false);
+});
+
+test('rule validation rejects malformed or unknown conditions while allowing omitted and empty rules', () => {
+  for (const rule of [null, [], 'TO VERIFY', { eu: 'false' }, { job: null }, { income: true }, { _review: 'reviewed' }]) {
+    const broken = structuredClone(content);
+    broken.steps[0].applies_if = rule;
+    assert.throws(() => validateContent(broken));
+  }
+  for (const rule of [undefined, {}, { family: false }]) {
+    const valid = structuredClone(content);
+    valid.steps[0].applies_if = rule;
+    assert.equal(validateContent(valid), valid);
+  }
+});
+
+test('the four answers save together and survive reload and later edits without losing hidden progress', async () => {
+  const original = { version: 1, euCitizen: false, moveInDate: '2026-10-27', completedSteps: ['residence-permit'], packedDocuments: ['identity'] };
+  let raw = JSON.stringify(original);
+  const writes = [];
+  const storage = { getItem: async () => raw, setItem: async (key, value) => { writes.push(value); raw = value; } };
+  const store = createProgressStore(storage, content);
+  await store.hydrate();
+  assert.equal(writes.length, 0);
+  assert.equal(hasCompleteStatus(getStatusAnswers(store.snapshot().state)), false);
+  const answers = { eu: true, job: false, student: true, family: false };
+  await store.update(getStatusUpdate(answers));
+  assert.equal(writes.length, 1);
+  const reloaded = createProgressStore(storage, content);
+  await reloaded.hydrate();
+  assert.deepEqual(getStatusAnswers(reloaded.snapshot().state), answers);
+  assert.equal(hasCompleteStatus(getStatusAnswers(reloaded.snapshot().state)), true);
+  assert.equal(getChecklistProgress(content, reloaded.snapshot().state).done, 0);
+  await reloaded.update(getStatusUpdate({ ...answers, eu: false, family: true }));
+  const edited = restoreProgress(raw, content);
+  assert.equal(getChecklistProgress(content, edited).done, 1);
+  assert.equal(edited.moveInDate, original.moveInDate);
+  assert.deepEqual(edited.completedSteps, original.completedSteps);
+  assert.deepEqual(edited.packedDocuments, original.packedDocuments);
+});
+
+test('the actual AsyncStorage web adapter reuses the old browser record and exposes failures to recovery', async t => {
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  t.after(() => {
+    if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow);
+    else delete globalThis.window;
+  });
+  const original = { version: 1, euCitizen: false, moveInDate: '', completedSteps: ['tax-id'], packedDocuments: ['identity'] };
+  const records = new Map([[STORAGE_KEY, JSON.stringify(original)]]);
+  let blockRead = true;
+  let blockWrite = false;
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { localStorage: {
+    getItem(key) { if (blockRead) throw new Error('blocked'); return records.get(key) ?? null; },
+    setItem(key, value) { if (blockWrite) throw new Error('quota'); records.set(key, value); }
+  } } });
+  const store = createProgressStore(getLegacyStorage(), content);
+  await store.hydrate();
+  assert.equal(store.snapshot().error, 'read');
+  assert.equal(store.update(getStatusUpdate({ eu: true, job: true, student: false, family: false })), false);
+  assert.deepEqual(JSON.parse(records.get(STORAGE_KEY)), original);
+  blockRead = false;
+  await store.hydrate();
+  assert.deepEqual(store.snapshot().state.completedSteps, original.completedSteps);
+  blockWrite = true;
+  const answers = { eu: true, job: true, student: false, family: false };
+  await store.update(getStatusUpdate(answers));
+  assert.equal(store.snapshot().error, 'write');
+  assert.deepEqual(JSON.parse(records.get(STORAGE_KEY)), original);
+  blockWrite = false;
+  await store.retrySave();
+  assert.equal(store.snapshot().error, null);
+  const reloaded = createProgressStore(getLegacyStorage(), content);
+  await reloaded.hydrate();
+  assert.deepEqual(getStatusAnswers(reloaded.snapshot().state), answers);
+  assert.deepEqual(reloaded.snapshot().state.packedDocuments, original.packedDocuments);
 });
 
 test('edits remain blocked until the saved record has loaded', async () => {
