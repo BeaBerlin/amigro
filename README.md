@@ -88,6 +88,8 @@ The live GitHub Pages site was checked on **28 October 2026**. All 15 automated 
 
 The later local brand update on **28 October 2026** passed JavaScript syntax checks and all 15 tests, including validation of the new JSON copy and FAQ entries. Browser checks covered the new first-visit copy, EU filtering, the eight FAQ pairs and footer, Back focus, document ticks shared across steps, completion from both views, reload persistence, and About plus all six detail views at **375 × 812** and **1280 × 900**. The local preview had no horizontal overflow or browser console warnings or errors. Both PNGs matched the supplied files byte for byte. These checks used the web app; Expo Go was not tested.
 
+The branded version was published to the public URL on **28 October 2026**. All 15 tests passed before publication. Its eight app resources returned HTTP 200 with the expected content types and matched the local source, including both original PNGs. Live checks covered About and all six detail views at **375 × 812** and **1280 × 900**, EU filtering, cancellation, saved completion and shared document ticks after a reload. There was no horizontal overflow or browser console warning or error. Test changes were undone, restoring the previous checklist state. Physical-device and Expo Go checks remain unperformed.
+
 For a manual smoke test after changes:
 
 1. Use a fresh browser origin, select Yes and start: expect five steps. Change the EU answer to No: expect six. Cancel another answer change and confirm nothing changes.
