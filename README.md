@@ -2,7 +2,9 @@
 
 Amigro is a mobile-first checklist that helps newcomers organise their first bureaucratic steps in Berlin.
 
-Public URL placeholder: `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/`
+Public URL: [https://beaberlin.github.io/amigro/](https://beaberlin.github.io/amigro/)
+
+Source repository: [BeaBerlin/amigro](https://github.com/BeaBerlin/amigro).
 
 Plain HTML, CSS and vanilla JavaScript. No framework, build step, runtime dependencies or application backend.
 
@@ -18,14 +20,16 @@ Open [Amigro locally](http://localhost:8000/). On a physical phone on the same n
 
 ## Publish with GitHub Pages
 
-1. Push the project files to a GitHub repository, keeping `index.html`, `data/` and `.nojekyll` in the repository root. No install or build command is needed.
-2. In the repository, open **Settings → Pages**. Choose **Deploy from a branch**, select the branch containing these files, choose **/(root)**, then save.
-3. Wait for GitHub to report the published URL. Replace the placeholder above with that URL.
+Amigro was first published on 28 October 2026. Pages uses **Deploy from a branch → main → /(root)**. Changes committed to `main` publish automatically.
+
+1. Push the project files to `BeaBerlin/amigro`, keeping `index.html`, `data/` and `.nojekyll` in the repository root. No install or build command is needed.
+2. To review the publishing settings, open the repository’s **Settings → Pages** and keep **Deploy from a branch → main → /(root)** selected.
+3. Wait for **pages build and deployment** in the repository’s **Actions** tab to finish successfully.
 4. Open the published site and check that the welcome, all applicable steps and official source links work. Reload after marking a step done to confirm progress is retained.
 
-See GitHub’s [publishing-source instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site). The empty `.nojekyll` file tells Pages to serve this static project without Jekyll processing. Publishing has not been performed as part of this review.
+See GitHub’s [publishing-source instructions](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site). The empty `.nojekyll` file tells Pages to serve this static project without Jekyll processing.
 
-App assets, imports and the JSON request use relative paths, including when hosted under `/YOUR-REPOSITORY/`. Official source links intentionally use absolute HTTPS URLs. Views share one page and use show/hide; no server rewrites or routing library are required. Localhost progress is separate from the published site’s browser storage.
+App assets, imports and the JSON request use relative paths, including under the live `/amigro/` path. Official source links intentionally use absolute HTTPS URLs. Views share one page and use show/hide; no server rewrites or routing library are required. Localhost progress is separate from the published site’s browser storage.
 
 ## App behaviour
 
@@ -68,7 +72,9 @@ npm run check
 
 No package installation is needed. This runs JavaScript syntax checks and 15 automated tests covering saved-data migration, filtered totals, answer changes, reset, storage failures, ordered writes, content integrity and date utilities.
 
-The review ran those checks successfully and exercised the app in the in-app browser at **375 × 812** and **1280 × 900**. All six detail views fit without horizontal scrolling at both widths. Browser checks also covered first visit, reload persistence, shared document ticks, completion from both views, answer changes and cancellation, legacy records, corrupt storage, blocked reads/writes, reset confirmation, invalid content and malformed JSON. Welcome, overview and a long-title detail were checked at 375 px with 200% root text size. A temporary `/amigro/` hosting prefix returned HTTP 200 for the shell, CSS, JavaScript modules, JSON, SVG and `.nojekyll`; the app worked under that prefix. All six official-source URLs were opened during the review. Physical-device and cross-browser checks have not been run.
+The local review on **27 October 2026** ran those checks successfully and exercised the app in the in-app browser at **375 × 812** and **1280 × 900**. All six detail views fit without horizontal scrolling at both widths. Browser checks also covered first visit, reload persistence, shared document ticks, completion from both views, answer changes and cancellation, legacy records, corrupt storage, blocked reads/writes, reset confirmation, invalid content and malformed JSON. Welcome, overview and a long-title detail were checked at 375 px with 200% root text size. A temporary `/amigro/` hosting prefix returned HTTP 200 for the shell, CSS, JavaScript modules, JSON, SVG and `.nojekyll`; the app worked under that prefix. All six official-source URLs were opened during that review.
+
+The live GitHub Pages site was checked on **28 October 2026**. All 15 automated tests passed again. The seven deployed app resources returned HTTP 200, had the expected content types and matched the local source byte for byte. Live browser checks covered first-visit onboarding, EU and non-EU lists, answer changes and cancellation, document ticks shared across steps, completion from both views and reload persistence. All six detail views were opened at **375 × 812** and **1280 × 900**, with correct source links, unchanged page URLs and no horizontal overflow. The browser reported no console warnings or errors. Test step and document ticks were cleared afterwards. Physical-device and cross-browser checks have not been run.
 
 For a manual smoke test after changes:
 
