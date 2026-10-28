@@ -53,8 +53,10 @@
       "when": "By when",
       "how": "How to get started",
       "packing": "What to bring",
-      "packingCount": "{done} of {total} ready",
-      "packingHelp": "Tick a document when it is ready. Shared documents keep the same tick across steps; this does not mark a step done.",
+      "packingCount": "{done} of {total} documents ready",
+      "packingHelp": "Tick a document when it is ready. Ticks are saved for this step only; this does not mark the step done.",
+      "readyBadge": "Ready to go",
+      "commonMistakes": "Common mistakes",
       "noDocuments": "No documents are listed for this step.",
       "source": "Open official guidance",
       "sourceNote": "Official websites open in a new tab. Check the current instructions before you apply.",
@@ -322,7 +324,8 @@
       "sourceReviewedOn": "2026-10-27",
       "applies_if": {
         "_review": "TO VERIFY"
-      }
+      },
+      "common_mistakes": []
     },
     {
       "id": "tax-id",
@@ -345,7 +348,8 @@
       "sourceReviewedOn": "2026-10-27",
       "applies_if": {
         "_review": "TO VERIFY"
-      }
+      },
+      "common_mistakes": []
     },
     {
       "id": "health-insurance",
@@ -373,7 +377,8 @@
       "sourceReviewedOn": "2026-10-27",
       "applies_if": {
         "_review": "TO VERIFY"
-      }
+      },
+      "common_mistakes": []
     },
     {
       "id": "bank-account",
@@ -401,7 +406,8 @@
       "sourceReviewedOn": "2026-10-27",
       "applies_if": {
         "_review": "TO VERIFY"
-      }
+      },
+      "common_mistakes": []
     },
     {
       "id": "rundfunkbeitrag",
@@ -429,7 +435,8 @@
       "sourceReviewedOn": "2026-10-27",
       "applies_if": {
         "_review": "TO VERIFY"
-      }
+      },
+      "common_mistakes": []
     },
     {
       "id": "residence-permit",
@@ -462,7 +469,8 @@
       "applies_if": {
         "_review": "TO VERIFY",
         "eu": false
-      }
+      },
+      "common_mistakes": []
     }
   ]
 }

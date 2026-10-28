@@ -39,7 +39,7 @@ export function formatDate(value, locale = 'en-GB') {
 }
 
 export function emptyProgress() {
-  return { version: 1, ...getStatusUpdate({}), moveInDate: '', completedSteps: [], packedDocuments: [] };
+  return { version: 1, ...getStatusUpdate({}), moveInDate: '', completedSteps: [], packedDocuments: [], packedDocumentsByStep: {} };
 }
 
 export function restoreProgress(raw, content) {
@@ -55,10 +55,28 @@ export function restoreProgress(raw, content) {
   for (const field of Object.values(STATUS_FIELDS)) {
     if (Object.hasOwn(state, field) && state[field] !== null && typeof state[field] !== 'boolean') throw new Error('invalid-progress');
   }
+  const hasStepPacking = Object.hasOwn(state, 'packedDocumentsByStep');
+  if (hasStepPacking && (!state.packedDocumentsByStep || typeof state.packedDocumentsByStep !== 'object' ||
+      Array.isArray(state.packedDocumentsByStep) || !Object.values(state.packedDocumentsByStep).every(ids =>
+        Array.isArray(ids) && ids.every(id => typeof id === 'string')))) throw new Error('invalid-progress');
+  // Seed the old shared ticks once. An existing map, including {}, is authoritative.
+  const packedDocumentsByStep = Object.fromEntries(content.steps.map(step => {
+    const ids = hasStepPacking
+      ? (Object.hasOwn(state.packedDocumentsByStep, step.id) ? state.packedDocumentsByStep[step.id] : [])
+      : state.packedDocuments;
+    return [step.id, [...new Set(ids)].filter(id => step.packingList.includes(id))];
+  }).filter(([, ids]) => ids.length));
   const known = (values, items) => [...new Set(values)].filter(id => items.some(item => item.id === id));
   return { version: 1, ...getStatusUpdate(getStatusAnswers(state)), moveInDate: state.moveInDate,
     completedSteps: known(state.completedSteps, content.steps),
-    packedDocuments: known(state.packedDocuments, content.documents) };
+    packedDocuments: known(state.packedDocuments, content.documents), packedDocumentsByStep };
+}
+
+export function getPackingProgress(step, state) {
+  const packed = new Set(state.packedDocumentsByStep?.[step.id] ?? []);
+  const total = step.packingList.length;
+  const done = step.packingList.filter(id => packed.has(id)).length;
+  return { done, total, ready: total > 0 && done === total };
 }
 
 export function stepApplies(step, state) {
@@ -84,7 +102,7 @@ export function validateContent(content) {
     checklist: ['subline', 'label', 'description', 'hint', 'completeLabel', 'doneLabel', 'nonEuLabel', 'viewLabel', 'listView', 'pathView', 'nextLabel'],
     onboarding: ['headline', 'subline', 'intro', 'yes', 'no', 'start', 'change', 'save', 'cancel'],
     progress: ['label', 'count'],
-    detail: ['back', 'why', 'when', 'packing', 'packingReminder', 'packingHelp', 'noDocuments', 'sourceHeading', 'source', 'sourceNote', 'complete', 'undo', 'done', 'notDone'],
+    detail: ['back', 'why', 'when', 'packing', 'packingCount', 'packingReminder', 'packingHelp', 'readyBadge', 'commonMistakes', 'noDocuments', 'sourceHeading', 'source', 'sourceNote', 'complete', 'undo', 'done', 'notDone'],
     about: ['label', 'headline', 'paragraph', 'reviewNote', 'footer'],
     storage: ['saved', 'saving', 'loading', 'read', 'corrupt', 'write', 'retryLoad', 'retrySave', 'reset', 'resetTitle', 'resetNote', 'resetConfirm', 'resetCancel'],
     bootstrap: ['error', 'retry']
@@ -100,7 +118,7 @@ export function validateContent(content) {
       !questions.every(item => item && Object.hasOwn(STATUS_FIELDS, item.id) && nonempty(item.label))) throw new Error('invalid-content-questions');
   if (!Array.isArray(content.ui.about.faq) || !content.ui.about.faq.length ||
       !content.ui.about.faq.every(item => nonempty(item?.question) && nonempty(item?.answer))) throw new Error('invalid-content-faq');
-  if (!['{done}', '{total}'].every(token => content.ui.progress.count.includes(token)) || !content.ui.checklist.completeLabel.includes('{title}')) throw new Error('invalid-content-template');
+  if (!['{done}', '{total}'].every(token => content.ui.progress.count.includes(token) && content.ui.detail.packingCount.includes(token)) || !content.ui.checklist.completeLabel.includes('{title}')) throw new Error('invalid-content-template');
   for (const items of [content.steps, content.documents]) {
     if (!items.every(item => item && nonempty(item.id)) || new Set(items.map(item => item.id)).size !== items.length) throw new Error('invalid-content-id');
   }
@@ -108,6 +126,8 @@ export function validateContent(content) {
     if (!nonempty(doc.label) || (doc.note !== undefined && !nonempty(doc.note))) throw new Error('invalid-content-document');
   }
   for (const step of content.steps) {
+    if (step.common_mistakes !== undefined && (!Array.isArray(step.common_mistakes) ||
+        !step.common_mistakes.every(nonempty))) throw new Error('invalid-content-mistakes');
     if (step.applies_if !== undefined) {
       const rule = step.applies_if;
       if (!rule || typeof rule !== 'object' || Array.isArray(rule) ||

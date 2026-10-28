@@ -108,6 +108,12 @@ h1 { margin: 0; font-size: 2.1rem; line-height: 1.2; font-weight: 600; letter-sp
 .is-complete .step-title { color: var(--ink); text-decoration: line-through; text-decoration-thickness: 1px; }
 .done-badge, .next-badge { display: block; width: fit-content; margin-top: 8px; padding: 2px 9px; border: 1px solid var(--green); border-radius: 999px; background: var(--card); color: var(--ink); font-size: .74rem; font-weight: 500; }
 .next-badge { color: var(--green); font-weight: 600; }
+.readiness-indicator { display: block; width: fit-content; margin-top: 8px; color: var(--muted); font-size: .78rem; }
+.ready-badge, .readiness-indicator.is-ready { display: inline-block; width: fit-content; padding: 3px 9px; border: 1px solid var(--green); border-radius: 999px; background: var(--mint); color: var(--ink); font-size: .78rem; font-weight: 600; }
+.detail-section .packing-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 14px; }
+.packing-count { color: var(--muted); font-size: .85rem; }
+.mistakes-list { margin: 0; padding-left: 20px; font-size: .95rem; overflow-wrap: anywhere; }
+.mistakes-list li + li { margin-top: 12px; }
 .checklist.is-path { gap: 0; }
 .is-path .step-row { position: relative; grid-template-columns: minmax(0, 1fr) 48px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .is-path .step-row::before { content: ''; position: absolute; left: 27px; top: 44px; bottom: -44px; width: 2px; background: var(--line); pointer-events: none; }

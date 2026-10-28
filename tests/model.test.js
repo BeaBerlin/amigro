@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { addDays, createProgressStore, emptyProgress, formatDate, getChecklistProgress, getStatusAnswers, getStatusUpdate, hasCompleteStatus, parseDate, restoreProgress, stepApplies, STATUS_FIELDS, STORAGE_KEY, validateContent } from '../js/model.js';
+import { addDays, createProgressStore, emptyProgress, formatDate, getChecklistProgress, getPackingProgress, getStatusAnswers, getStatusUpdate, hasCompleteStatus, parseDate, restoreProgress, stepApplies, STATUS_FIELDS, STORAGE_KEY, validateContent } from '../js/model.js';
 import { getLegacyStorage } from '../vendor/async-storage/createAsyncStorage.js';
 
 const content = JSON.parse(await readFile(new URL('../data/steps.json', import.meta.url), 'utf8'));
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+const legacyIdentityPacking = {
+  anmeldung: ['identity'], 'health-insurance': ['identity'], 'bank-account': ['identity'], 'residence-permit': ['identity']
+};
 
 test('dates reject impossible values and accept leap days', () => {
   for (const value of ['', '27/10/2026', '2026-02-29', '2026-02-31', '2026-13-01', '2026-00-01', '2026-04-31', '0026-01-01', null]) {
@@ -36,7 +39,7 @@ test('restore deduplicates IDs, drops retired items and rejects incompatible rec
 
 test('legacy progress retains known answers and ticks; missing status remains unanswered', () => {
   const legacy = { version: 1, moveInDate: '2026-10-27', completedSteps: ['anmeldung', 'residence-permit'], packedDocuments: ['identity'] };
-  assert.deepEqual(restoreProgress(JSON.stringify(legacy), content), { ...emptyProgress(), ...legacy });
+  assert.deepEqual(restoreProgress(JSON.stringify(legacy), content), { ...emptyProgress(), ...legacy, packedDocumentsByStep: legacyIdentityPacking });
   for (const answer of [true, false, null]) {
     const restored = restoreProgress(JSON.stringify({ ...legacy, euCitizen: answer }), content);
     assert.deepEqual(getStatusAnswers(restored), { eu: answer, job: null, student: null, family: null });
@@ -78,13 +81,13 @@ test('both citizenship answers survive a new store while existing date and ticks
     const reloaded = createProgressStore(storage, content);
     await reloaded.hydrate();
     assert.deepEqual(reloaded.snapshot().state, {
-      ...emptyProgress(), euCitizen: answer, moveInDate: '2026-10-27', completedSteps: ['anmeldung'], packedDocuments: ['identity']
+      ...emptyProgress(), euCitizen: answer, moveInDate: '2026-10-27', completedSteps: ['anmeldung'], packedDocuments: ['identity'], packedDocumentsByStep: legacyIdentityPacking
     });
   }
 });
 
-test('changing the EU answer preserves hidden step progress and shared documents', async () => {
-  let raw = JSON.stringify({ ...emptyProgress(), euCitizen: false, completedSteps: content.steps.map(step => step.id), packedDocuments: ['identity'] });
+test('changing the EU answer preserves hidden step progress and its document ticks', async () => {
+  let raw = JSON.stringify({ ...emptyProgress(), euCitizen: false, completedSteps: content.steps.map(step => step.id), packedDocumentsByStep: { 'residence-permit': ['identity'] } });
   const store = createProgressStore({ getItem: () => raw, setItem(key, value) { raw = value; } }, content);
   await store.hydrate();
   await store.update({ euCitizen: true });
@@ -92,11 +95,11 @@ test('changing the EU answer preserves hidden step progress and shared documents
   assert.equal(JSON.parse(raw).completedSteps.length, 6);
   await store.update({ euCitizen: false });
   assert.equal(getChecklistProgress(content, store.snapshot().state).done, 6);
-  assert.deepEqual(store.snapshot().state.packedDocuments, ['identity']);
+  assert.deepEqual(store.snapshot().state.packedDocumentsByStep, { 'residence-permit': ['identity'] });
 });
 
 test('explicit reset clears all status answers together with the saved checklist', async () => {
-  let raw = JSON.stringify({ ...emptyProgress(), ...getStatusUpdate({ eu: true, job: true, student: false, family: true }), moveInDate: '2026-10-27', completedSteps: ['anmeldung'], packedDocuments: ['identity'] });
+  let raw = JSON.stringify({ ...emptyProgress(), ...getStatusUpdate({ eu: true, job: true, student: false, family: true }), moveInDate: '2026-10-27', completedSteps: ['anmeldung'], packedDocuments: ['identity'], packedDocumentsByStep: { anmeldung: ['identity'] } });
   const store = createProgressStore({ getItem: () => raw, setItem(key, value) { raw = value; } }, content);
   await store.hydrate();
   await store.reset();
@@ -110,6 +113,9 @@ test('content validation rejects broken copy, duplicate IDs, unsafe sources and 
     value => { value.steps = []; },
     value => { delete value.ui.detail.complete; },
     value => { delete value.ui.detail.packingReminder; },
+    value => { delete value.ui.detail.readyBadge; },
+    value => { delete value.ui.detail.commonMistakes; },
+    value => { value.ui.detail.packingCount = 'Ready'; },
     value => { delete value.ui.onboarding.headline; },
     value => { value.ui.onboarding.questions.pop(); },
     value => { value.ui.onboarding.questions[1].id = 'eu'; },
@@ -133,6 +139,80 @@ test('content validation rejects broken copy, duplicate IDs, unsafe sources and 
   for (const mutate of breakContent) {
     const broken = structuredClone(content);
     mutate(broken);
+    assert.throws(() => validateContent(broken));
+  }
+});
+
+test('legacy shared ticks migrate once; clearing a per-step tick never restores it from the legacy array', async () => {
+  const legacy = { version: 1, euCitizen: false, moveInDate: '', completedSteps: ['anmeldung'], packedDocuments: ['identity'] };
+  let raw = JSON.stringify(legacy);
+  let writes = 0;
+  const storage = { getItem: async () => raw, setItem: async (key, value) => { writes += 1; raw = value; } };
+  const store = createProgressStore(storage, content);
+  await store.hydrate();
+  assert.equal(writes, 0);
+  assert.deepEqual(store.snapshot().state.packedDocumentsByStep, legacyIdentityPacking);
+  await store.update({ packedDocumentsByStep: { ...store.snapshot().state.packedDocumentsByStep, anmeldung: [] } });
+  const reloaded = createProgressStore(storage, content);
+  await reloaded.hydrate();
+  assert.equal(reloaded.snapshot().state.packedDocumentsByStep.anmeldung, undefined);
+  assert.deepEqual(reloaded.snapshot().state.packedDocumentsByStep['health-insurance'], ['identity']);
+  assert.deepEqual(reloaded.snapshot().state.completedSteps, legacy.completedSteps);
+  await reloaded.update({ packedDocumentsByStep: {} });
+  assert.deepEqual(restoreProgress(raw, content).packedDocumentsByStep, {});
+  assert.deepEqual(JSON.parse(raw).packedDocuments, ['identity']);
+});
+
+test('packing readiness persists independently per step and does not complete a step or empty list', async () => {
+  let raw = null;
+  const storage = { getItem: async () => raw, setItem: async (key, value) => { raw = value; } };
+  const store = createProgressStore(storage, content);
+  await store.hydrate();
+  const address = content.steps.find(step => step.id === 'anmeldung');
+  const insurance = content.steps.find(step => step.id === 'health-insurance');
+  const tax = content.steps.find(step => step.id === 'tax-id');
+  await store.update({ packedDocumentsByStep: { anmeldung: ['identity'] } });
+  assert.deepEqual(getPackingProgress(address, store.snapshot().state), { done: 1, total: 5, ready: false });
+  assert.deepEqual(getPackingProgress(insurance, store.snapshot().state), { done: 0, total: 4, ready: false });
+  await store.update({ packedDocumentsByStep: { anmeldung: [...address.packingList], 'health-insurance': ['identity'] } });
+  const reloaded = createProgressStore(storage, content);
+  await reloaded.hydrate();
+  assert.deepEqual(getPackingProgress(address, reloaded.snapshot().state), { done: 5, total: 5, ready: true });
+  assert.deepEqual(getPackingProgress(insurance, reloaded.snapshot().state), { done: 1, total: 4, ready: false });
+  assert.deepEqual(getPackingProgress(tax, reloaded.snapshot().state), { done: 0, total: 0, ready: false });
+  assert.deepEqual(reloaded.snapshot().state.completedSteps, []);
+  await reloaded.update({ packedDocumentsByStep: { ...reloaded.snapshot().state.packedDocumentsByStep, anmeldung: ['identity'] } });
+  assert.equal(getPackingProgress(address, reloaded.snapshot().state).ready, false);
+});
+
+test('per-step restore removes stale or misplaced IDs and rejects malformed maps without overwriting data', async () => {
+  const state = { ...emptyProgress(), packedDocumentsByStep: {
+    anmeldung: ['identity', 'identity', 'retired-document', 'home-details'],
+    'tax-id': ['identity'], retired: ['identity']
+  } };
+  assert.deepEqual(restoreProgress(JSON.stringify(state), content).packedDocumentsByStep, { anmeldung: ['identity'] });
+  for (const map of [null, [], 'bad', { anmeldung: null }, { anmeldung: 'identity' }, { anmeldung: [42] }]) {
+    const saved = JSON.stringify({ ...emptyProgress(), packedDocumentsByStep: map });
+    assert.throws(() => restoreProgress(saved, content));
+    let writes = 0;
+    const store = createProgressStore({ getItem: async () => saved, setItem: async () => { writes += 1; } }, content);
+    await store.hydrate();
+    assert.equal(store.snapshot().error, 'corrupt');
+    assert.equal(store.update({ packedDocumentsByStep: {} }), false);
+    assert.equal(writes, 0);
+  }
+});
+
+test('common mistakes are optional string arrays; all shipped arrays are empty', () => {
+  for (const step of content.steps) assert.deepEqual(step.common_mistakes, []);
+  for (const value of [undefined, [], ['TO VERIFY: Team draft']]) {
+    const custom = structuredClone(content);
+    custom.steps[0].common_mistakes = value;
+    assert.equal(validateContent(custom), custom);
+  }
+  for (const value of [null, {}, 'draft', [1], [''], ['  ']]) {
+    const broken = structuredClone(content);
+    broken.steps[0].common_mistakes = value;
     assert.throws(() => validateContent(broken));
   }
 });
@@ -316,15 +396,15 @@ test('a failed write stays visible during retry and clears only after a successf
   let persisted;
   const store = createProgressStore({ getItem: () => null, setItem(key, value) { if (fail) throw new Error('quota'); persisted = value; } }, content);
   await store.hydrate();
-  await store.update({ packedDocuments: ['identity'] });
+  await store.update({ packedDocumentsByStep: { anmeldung: ['identity'] } });
   assert.equal(store.snapshot().error, 'write');
-  assert.deepEqual(store.snapshot().state.packedDocuments, ['identity']);
+  assert.deepEqual(store.snapshot().state.packedDocumentsByStep, { anmeldung: ['identity'] });
   fail = false;
   const retry = store.retrySave();
   assert.equal(store.snapshot().error, 'write');
   await retry;
   assert.equal(store.snapshot().error, null);
-  assert.deepEqual(JSON.parse(persisted).packedDocuments, ['identity']);
+  assert.deepEqual(JSON.parse(persisted).packedDocumentsByStep, { anmeldung: ['identity'] });
 });
 
 test('content has unique stable IDs, valid packing references and official HTTPS sources', () => {

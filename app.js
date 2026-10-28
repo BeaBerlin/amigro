@@ -1,4 +1,4 @@
-import { createProgressStore, getChecklistProgress, getStatusAnswers, getStatusUpdate, hasCompleteStatus, validateContent } from './js/model.js';
+import { createProgressStore, getChecklistProgress, getPackingProgress, getStatusAnswers, getStatusUpdate, hasCompleteStatus, validateContent } from './js/model.js';
 import { getLegacyStorage } from './vendor/async-storage/createAsyncStorage.js';
 
 const AsyncStorage = getLegacyStorage();
@@ -236,6 +236,8 @@ function showChecklist(content) {
   let activeStepId = null;
   let detailDoneButton = null;
   let detailDoneStatus = null;
+  let detailPackingCount = null;
+  let detailReadyBadge = null;
   let activeView = 'overview';
   let editingAnswer = false;
   let editReturnView = 'overview';
@@ -291,6 +293,8 @@ function showChecklist(content) {
     lastStepButton = trigger;
     activeStepId = step.id;
     documentInputs.clear();
+    detailPackingCount = null;
+    detailReadyBadge = null;
 
     const back = element('button', 'back-button');
     back.type = 'button';
@@ -327,6 +331,13 @@ function showChecklist(content) {
     packing.append(element('p', 'packing-reminder', ui.detail.packingReminder));
     if (step.packingList.length) {
       packing.append(element('p', 'packing-help', ui.detail.packingHelp));
+      const packingStatus = element('p', 'packing-status');
+      packingStatus.setAttribute('role', 'status');
+      detailPackingCount = element('span', 'packing-count');
+      detailReadyBadge = element('span', 'ready-badge', ui.detail.readyBadge);
+      detailReadyBadge.hidden = true;
+      packingStatus.append(detailPackingCount, detailReadyBadge);
+      packing.append(packingStatus);
       const packingList = element('ul', 'document-list');
       for (const id of step.packingList) {
         const doc = documents.find(item => item.id === id);
@@ -347,13 +358,13 @@ function showChecklist(content) {
         input.addEventListener('change', () => {
           const snapshot = store.snapshot();
           if (!canUseChecklist(snapshot)) {
-            input.checked = snapshot.state.packedDocuments.includes(id);
+            input.checked = snapshot.state.packedDocumentsByStep[step.id]?.includes(id) ?? false;
             return;
           }
-          const packedDocuments = new Set(snapshot.state.packedDocuments);
+          const packedDocuments = new Set(snapshot.state.packedDocumentsByStep[step.id] ?? []);
           if (input.checked) packedDocuments.add(id);
           else packedDocuments.delete(id);
-          store.update({ packedDocuments: [...packedDocuments] });
+          store.update({ packedDocumentsByStep: { ...snapshot.state.packedDocumentsByStep, [step.id]: [...packedDocuments] } });
         });
       }
       packing.append(packingList);
@@ -362,6 +373,14 @@ function showChecklist(content) {
     }
     if (step.packingListNote) packing.append(element('p', 'packing-note', step.packingListNote));
     detail.append(packing);
+
+    if (step.common_mistakes?.length) {
+      const mistakes = element('section', 'detail-section common-mistakes');
+      const mistakeList = element('ul', 'mistakes-list');
+      for (const mistake of step.common_mistakes) mistakeList.append(element('li', null, mistake));
+      mistakes.append(element('h3', null, ui.detail.commonMistakes), mistakeList);
+      detail.append(mistakes);
+    }
 
     const source = element('a', 'source-link', ui.detail.source);
     source.href = step.officialSourceUrl;
@@ -396,7 +415,9 @@ function showChecklist(content) {
     doneBadge.hidden = true;
     const nextBadge = element('span', 'next-badge', ui.checklist.nextLabel);
     nextBadge.hidden = true;
-    text.append(doneBadge, nextBadge);
+    const readiness = element('span', 'readiness-indicator');
+    readiness.hidden = true;
+    text.append(doneBadge, nextBadge, readiness);
     const input = element('input', 'step-checkbox');
     input.type = 'checkbox';
     input.disabled = true;
@@ -407,7 +428,7 @@ function showChecklist(content) {
     open.append(number, text);
     row.append(open, completeControl);
     list.append(row);
-    inputs.set(step.id, { input, row, open, title, step, doneBadge, nextBadge, number });
+    inputs.set(step.id, { input, row, open, title, step, doneBadge, nextBadge, readiness, number });
 
     input.addEventListener('change', () => {
       if (setStepDone(step.id, input.checked) === false) {
@@ -495,7 +516,7 @@ function showChecklist(content) {
     changeAnswer.disabled = !ready;
     aboutEditAnswers.disabled = !ready;
     let stepNumber = 0;
-    for (const [id, { input, row, open, title, step, doneBadge, nextBadge, number }] of inputs) {
+    for (const [id, { input, row, open, title, step, doneBadge, nextBadge, readiness, number }] of inputs) {
       row.hidden = !visibleIds.has(id);
       const stepTitle = pathView ? step.shortTitle : step.title;
       if (title.textContent !== stepTitle) title.textContent = stepTitle;
@@ -511,6 +532,11 @@ function showChecklist(content) {
       else open.removeAttribute('aria-current');
       doneBadge.hidden = !input.checked;
       nextBadge.hidden = !isNext;
+      const packing = getPackingProgress(step, snapshot.state);
+      readiness.hidden = !packing.total;
+      readiness.classList.toggle('is-ready', packing.ready);
+      const readinessText = packing.ready ? ui.detail.readyBadge : fillTemplate(ui.detail.packingCount, packing);
+      if (readiness.textContent !== readinessText) readiness.textContent = readinessText;
     }
     progress.hidden = !ready;
     if (ready) {
@@ -529,8 +555,14 @@ function showChecklist(content) {
       if (detailDoneStatus.textContent !== statusText) detailDoneStatus.textContent = statusText;
     }
     for (const [id, input] of documentInputs) {
-      input.checked = snapshot.state.packedDocuments.includes(id);
+      input.checked = snapshot.state.packedDocumentsByStep[activeStepId]?.includes(id) ?? false;
       input.disabled = !ready;
+    }
+    if (detailPackingCount) {
+      const packing = getPackingProgress(steps.find(step => step.id === activeStepId), snapshot.state);
+      const count = fillTemplate(ui.detail.packingCount, packing);
+      if (detailPackingCount.textContent !== count) detailPackingCount.textContent = count;
+      detailReadyBadge.hidden = !packing.ready;
     }
     errorBox.hidden = !snapshot.error;
     resetButton.hidden = !snapshot.error || snapshot.ready;
